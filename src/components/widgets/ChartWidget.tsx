@@ -26,7 +26,7 @@ interface ChartWidgetProps {
   description?: string;
 }
 
-const defaultColors = ['#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e'];
+const defaultColors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#10b981'];
 
 export default function ChartWidget({
   type,
@@ -37,39 +37,99 @@ export default function ChartWidget({
   colors = defaultColors,
   description = ''
 }: ChartWidgetProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const renderChart = () => {
+    const commonProps = {
+      data,
+      margin: { top: 5, right: 5, left: 5, bottom: 5 }
+    };
+
     switch (type) {
       case 'bar':
         return (
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={nameKey} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey={dataKey} fill={colors[0]} />
+          <ResponsiveContainer width="100%" height={170}>
+            <BarChart {...commonProps}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+              <XAxis
+                dataKey={nameKey}
+                angle={-45}
+                textAnchor="end"
+                height={60}
+                stroke="#64748b"
+                fontSize={10}
+                tickMargin={8}
+              />
+              <YAxis 
+                stroke="#64748b" 
+                fontSize={10} 
+                tickMargin={8}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '0.375rem',
+                  padding: '8px',
+                  fontSize: '0.75rem',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                }}
+                cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+              />
+              <Bar
+                dataKey={dataKey}
+                fill={colors[0]}
+                radius={[2, 2, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         );
       
       case 'line':
         return (
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={nameKey} />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey={dataKey} stroke={colors[0]} />
+          <ResponsiveContainer width="100%" height={170}>
+            <LineChart {...commonProps}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+              <XAxis
+                dataKey={nameKey}
+                angle={-45}
+                textAnchor="end"
+                height={60}
+                stroke="#64748b"
+                fontSize={10}
+                tickMargin={8}
+              />
+              <YAxis 
+                stroke="#64748b" 
+                fontSize={10} 
+                tickMargin={8}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '0.375rem',
+                  padding: '8px',
+                  fontSize: '0.75rem',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                }}
+                cursor={{ stroke: 'rgba(0,0,0,0.2)' }}
+              />
+              <Line
+                type="monotone"
+                dataKey={dataKey}
+                stroke={colors[0]}
+                strokeWidth={2}
+                dot={{ r: 3, fill: colors[0] }}
+                activeDot={{ r: 5, fill: colors[0] }}
+              />
             </LineChart>
           </ResponsiveContainer>
         );
       
       case 'pie':
         return (
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={170}>
             <PieChart>
               <Pie
                 data={data}
@@ -77,14 +137,27 @@ export default function ChartWidget({
                 nameKey={nameKey}
                 cx="50%"
                 cy="50%"
-                outerRadius={80}
-                label
+                outerRadius={60}
+                labelLine={false}
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
               >
                 {data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={colors[index % colors.length]}
+                  />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '0.375rem',
+                  padding: '8px',
+                  fontSize: '0.75rem',
+                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
         );
@@ -92,43 +165,40 @@ export default function ChartWidget({
   };
 
   return (
-    <>
-      <div
-        className="bg-white p-4 rounded-lg shadow cursor-pointer transition-transform hover:scale-[1.02] relative group"
-        onClick={() => setIsExpanded(true)}
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <button
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full"
-            title="Expand"
-          >
-            <svg
-              className="w-5 h-5 text-gray-600"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5m-7 11h4m-4 0v4m0 0l5-5m5 5v-4m0 4h-4m0 0l5-5"></path>
-            </svg>
-          </button>
-        </div>
+    <div className="chart-widget">
+      <div className="chart-header">
+        <h3 className="chart-title">{title}</h3>
+        <button 
+          onClick={() => setExpanded(true)} 
+          className="expand-button"
+          aria-label="Expand chart"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="chart-body">
         {renderChart()}
       </div>
 
-      {isExpanded && (
+      {description && (
+        <div className="chart-description">
+          <p>{description}</p>
+        </div>
+      )}
+
+      {expanded && (
         <ExpandedChartView
           type={type}
           title={title}
           data={data}
           dataKey={dataKey}
           description={description}
-          onClose={() => setIsExpanded(false)}
+          onClose={() => setExpanded(false)}
         />
       )}
-    </>
+    </div>
   );
 } 

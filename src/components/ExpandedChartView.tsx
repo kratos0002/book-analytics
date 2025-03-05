@@ -17,114 +17,112 @@ import {
 } from 'recharts';
 import { ChartData } from '../utils/bookAnalytics';
 
-interface ExpandedChartViewProps {
-  type: 'pie' | 'bar' | 'line';
+export interface ExpandedChartViewProps {
+  type: 'bar' | 'line' | 'pie';
   title: string;
-  data: ChartData[];
+  data: any[];
   dataKey: string;
-  description: string;
+  nameKey?: string;
+  description?: string;
   onClose: () => void;
 }
 
-const defaultColors = ['#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e'];
-
-export default function ExpandedChartView({
+const ExpandedChartView: React.FC<ExpandedChartViewProps> = ({
   type,
   title,
   data,
   dataKey,
+  nameKey = 'name',
   description,
   onClose
-}: ExpandedChartViewProps) {
+}) => {
+  // Default colors if not provided
+  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F'];
+
   const renderChart = () => {
     switch (type) {
       case 'bar':
         return (
-          <ResponsiveContainer width="100%" height={500}>
-            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="name"
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data}
+              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis 
+                dataKey={nameKey} 
+                tick={{ fill: 'rgba(255,255,255,0.7)' }}
                 angle={-45}
                 textAnchor="end"
-                height={80}
-                interval={0}
-              >
-                <Label value="Title" position="bottom" offset={50} />
-              </XAxis>
-              <YAxis>
-                <Label value={dataKey} angle={-90} position="left" offset={10} />
-              </YAxis>
-              <Tooltip
-                contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '8px' }}
-                cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
+                height={70}
               />
-              <Legend />
-              <Bar
-                dataKey={dataKey}
-                fill={defaultColors[0]}
-                animationDuration={1000}
-                onMouseOver={(data) => console.log('Bar hover:', data)}
+              <YAxis tick={{ fill: 'rgba(255,255,255,0.7)' }} />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'rgba(23, 25, 35, 0.9)', 
+                  border: 'none', 
+                  borderRadius: '8px',
+                  color: 'white'
+                }} 
               />
+              <Legend wrapperStyle={{ color: 'rgba(255,255,255,0.7)' }} />
+              <Bar dataKey={dataKey} fill="#8884d8" />
             </BarChart>
           </ResponsiveContainer>
         );
-      
       case 'line':
         return (
-          <ResponsiveContainer width="100%" height={500}>
-            <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="name"
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={data}
+              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis 
+                dataKey={nameKey} 
+                tick={{ fill: 'rgba(255,255,255,0.7)' }}
                 angle={-45}
                 textAnchor="end"
-                height={80}
-                interval={0}
-              >
-                <Label value="Year" position="bottom" offset={50} />
-              </XAxis>
-              <YAxis>
-                <Label value="Number of Books" angle={-90} position="left" offset={10} />
-              </YAxis>
-              <Tooltip
-                contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '8px' }}
-                cursor={{ stroke: 'rgba(0, 0, 0, 0.3)' }}
+                height={70}
               />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey={dataKey}
-                stroke={defaultColors[0]}
+              <YAxis tick={{ fill: 'rgba(255,255,255,0.7)' }} />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'rgba(23, 25, 35, 0.9)', 
+                  border: 'none', 
+                  borderRadius: '8px',
+                  color: 'white'
+                }} 
+              />
+              <Legend wrapperStyle={{ color: 'rgba(255,255,255,0.7)' }} />
+              <Line 
+                type="monotone" 
+                dataKey={dataKey} 
+                stroke="#8884d8" 
                 strokeWidth={2}
-                dot={{ r: 6 }}
-                activeDot={{ r: 8 }}
-                animationDuration={1000}
+                dot={{ strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6 }}
               />
             </LineChart>
           </ResponsiveContainer>
         );
-      
       case 'pie':
         return (
-          <ResponsiveContainer width="100%" height={500}>
-            <PieChart>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
               <Pie
                 data={data}
-                dataKey={dataKey}
-                nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={200}
-                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(1)}%)`}
-                labelLine={{ stroke: '#666', strokeWidth: 1 }}
-                animationDuration={1000}
+                labelLine={true}
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius="80%"
+                fill="#8884d8"
+                dataKey={dataKey}
+                nameKey={nameKey}
               >
-                {data.map((_, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={defaultColors[index % defaultColors.length]}
-                  />
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                 ))}
               </Pie>
               <Tooltip
@@ -142,25 +140,28 @@ export default function ExpandedChartView({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-xl w-11/12 h-5/6 max-w-7xl overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+            <h2 className="text-lg font-medium text-gray-900">{title}</h2>
             <p className="text-sm text-gray-500 mt-1">{description}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
           >
             <svg
-              className="w-6 h-6 text-gray-600"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
+              fill="none"
               stroke="currentColor"
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              className="text-gray-500"
+              style={{ width: '16px', height: '16px' }}
             >
               <path d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -172,4 +173,6 @@ export default function ExpandedChartView({
       </div>
     </div>
   );
-} 
+}
+
+export default ExpandedChartView; 

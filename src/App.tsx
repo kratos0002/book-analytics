@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import BookSearchBar from './components/BookSearchBar';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
+import BookSearchBar from './components/BookSearchBar';
 import { Book } from './types';
-import { getLibrary, removeFromLibrary } from './utils/library';
+import { addToLibrary, getLibrary, removeFromLibrary } from './utils/library';
 
-export default function App() {
+function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  // Load books from localStorage on initial render
   useEffect(() => {
-    // Load initial library state
     const libraryBooks = getLibrary();
     setBooks(libraryBooks);
     if (libraryBooks.length > 0) {
@@ -18,35 +19,35 @@ export default function App() {
   }, []);
 
   const handleBookSelect = (book: Book) => {
-    setBooks(getLibrary()); // Refresh the library after a book is added
+    addToLibrary(book);
+    setBooks(getLibrary());
     setLastUpdated(new Date());
   };
 
   const handleDeleteBook = (bookId: string) => {
     removeFromLibrary(bookId);
-    setBooks(getLibrary()); // Refresh the library after a book is removed
+    setBooks(getLibrary());
     setLastUpdated(new Date());
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Book Analytics Dashboard</h1>
-          <div className="flex items-center justify-between">
-            <div className="w-96">
-              <BookSearchBar onBookSelect={handleBookSelect} />
-            </div>
-            {lastUpdated && (
-              <p className="text-sm text-gray-500">
-                Last updated: {lastUpdated.toLocaleString()}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <Dashboard books={books} onDeleteBook={handleDeleteBook} />
+    <Router>
+      <div className="app-container">
+        <header className="dashboard-header">
+          <h1 className="dashboard-title">Book Analytics Dashboard</h1>
+          <p className="dashboard-subtitle">
+            Track your reading habits, discover insights about your collection, and visualize your literary journey.
+          </p>
+          <BookSearchBar onBookSelect={handleBookSelect} />
+        </header>
+        <main className="container">
+          <Routes>
+            <Route path="/" element={<Dashboard books={books} onDeleteBook={handleDeleteBook} />} />
+          </Routes>
+        </main>
       </div>
-    </div>
+    </Router>
   );
 }
+
+export default App;

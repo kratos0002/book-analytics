@@ -1,0 +1,39 @@
+/* Fix icon sizing issues */
+svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Force specific icon sizes */
+.w-3, .h-3 {
+  width: 0.75rem !important;
+  height: 0.75rem !important;
+}
+
+.w-4, .h-4 {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+.w-5, .h-5 {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+}
+
+.w-6, .h-6 {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+}
+
+/* Override any SVG styling from third-party libraries */
+svg[viewBox="0 0 24 24"] {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Fix positioning of search icon */
+.absolute.right-3 svg,
+.absolute.top-1\/2.right-3 svg {
+  width: 14px !important;
+  height: 14px !important;
+} 

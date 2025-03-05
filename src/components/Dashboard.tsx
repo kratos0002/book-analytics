@@ -80,105 +80,111 @@ export default function Dashboard({ books, onDeleteBook }: DashboardProps) {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-6">Book Analytics Dashboard</h2>
-      
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Total Books</h3>
-          <p className="text-2xl font-bold text-blue-600">{stats.totalBooks}</p>
-          <p className="text-sm text-gray-500">{stats.completedBooks} with page count</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Unique Authors</h3>
-          <p className="text-2xl font-bold text-indigo-600">{stats.uniqueAuthors}</p>
-          <p className="text-sm text-gray-500">Genre diversity: {(stats.genreDiversity * 100).toFixed(1)}%</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Average Rating</h3>
-          <p className="text-2xl font-bold text-purple-600">
-            {stats.averageRating.toFixed(1)} / 5
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Pages</h3>
-          <p className="text-2xl font-bold text-pink-600">{stats.totalPages}</p>
-          <p className="text-sm text-gray-500">Avg: {Math.round(stats.averagePages)} per book</p>
-        </div>
-      </div>
-
+    <div>
       {books.length === 0 ? (
-        <div className="bg-white p-8 rounded-lg shadow text-center">
-          <h3 className="text-xl font-medium text-gray-900 mb-2">No Books Yet</h3>
-          <p className="text-gray-500">
-            Use the search bar above to add books to your collection and see analytics here.
-          </p>
-        </div>
-      ) : activeVisualizations.length === 0 ? (
-        <div className="bg-white p-8 rounded-lg shadow text-center">
-          <h3 className="text-xl font-medium text-gray-900 mb-2">Add More Books</h3>
-          <p className="text-gray-500">
-            Add more books to your collection to unlock visualizations and insights.
-          </p>
+        <div className="empty-state">
+          <svg 
+            className="empty-state-icon" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={1.5} 
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" 
+            />
+          </svg>
+          <h3 className="empty-state-title">No books in your library</h3>
+          <p className="empty-state-message">Get started by adding some books to your collection.</p>
         </div>
       ) : (
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={layouts || defaultLayouts}
-          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-          rowHeight={100}
-          onLayoutChange={handleLayoutChange}
-          isDraggable
-          isResizable
-        >
-          <div key="genres">
-            <ChartWidget
-              type="pie"
-              title="Books by Genre"
-              data={getGenreDistribution(books)}
-              dataKey="value"
-              description="Distribution of books across different genres in your library"
-            />
+        <>
+          {/* Summary Cards */}
+          <div className="stats-grid">
+            <div className="summary-card">
+              <h3 className="summary-card-title">
+                <span className="card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </span>
+                Total Books
+              </h3>
+              <p className="summary-card-value">{stats.totalBooks}</p>
+              <p className="summary-card-detail">{stats.completedBooks} with page count</p>
+            </div>
+
+            <div className="summary-card">
+              <h3 className="summary-card-title">
+                <span className="card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </span>
+                Unique Authors
+              </h3>
+              <p className="summary-card-value">{stats.uniqueAuthors}</p>
+              <p className="summary-card-detail">Genre diversity: {(stats.genreDiversity * 100).toFixed(1)}%</p>
+            </div>
+
+            <div className="summary-card">
+              <h3 className="summary-card-title">
+                <span className="card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </span>
+                Average Rating
+              </h3>
+              <p className="summary-card-value">
+                {stats.averageRating.toFixed(1)}
+              </p>
+              <p className="summary-card-detail">out of 5.0</p>
+            </div>
+
+            <div className="summary-card">
+              <h3 className="summary-card-title">
+                <span className="card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </span>
+                Total Pages
+              </h3>
+              <p className="summary-card-value">{stats.totalPages}</p>
+              <p className="summary-card-detail">Avg: {Math.round(stats.averagePages)} per book</p>
+            </div>
           </div>
-          <div key="authors">
-            <ChartWidget
-              type="bar"
-              title="Books per Author"
-              data={getAuthorStats(books)}
-              dataKey="value"
-              description="Number of books by each author in your collection"
-            />
+
+          {/* Charts */}
+          <div>
+            <ResponsiveGridLayout
+              className="layout"
+              layouts={layouts}
+              breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+              cols={{ lg: 3, md: 2, sm: 2, xs: 1, xxs: 1 }}
+              rowHeight={250}
+              onLayoutChange={handleLayoutChange}
+              isDraggable={true}
+              isResizable={true}
+            >
+              {activeVisualizations.map((viz) => (
+                <div key={viz.id} data-grid={viz.layout} className="chart-container">
+                  <ChartWidget
+                    type={viz.type as any}
+                    title={viz.title}
+                    data={viz.getData(books)}
+                    dataKey={viz.dataKey}
+                    description={viz.description}
+                  />
+                </div>
+              ))}
+            </ResponsiveGridLayout>
           </div>
-          <div key="pages">
-            <ChartWidget
-              type="bar"
-              title="Page Count Distribution"
-              data={getPageCountDistribution(books)}
-              dataKey="value"
-              description="Distribution of page counts across your books"
-            />
-          </div>
-          <div key="ratings">
-            <ChartWidget
-              type="bar"
-              title="Book Ratings"
-              data={getRatingDistribution(books)}
-              dataKey="value"
-              description="Average ratings distribution of books in your library"
-            />
-          </div>
-          <div key="timeline">
-            <ChartWidget
-              type="line"
-              title="Publication Timeline"
-              data={getPublishingYearDistribution(books)}
-              dataKey="value"
-              description="Number of books published each year in your collection"
-            />
-          </div>
-        </ResponsiveGridLayout>
+        </>
       )}
     </div>
   );
