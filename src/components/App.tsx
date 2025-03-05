@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import BookSearchBar from './BookSearchBar';
 import BookList from './BookList';
+import RecentBooks from './RecentBooks';
 
 // Define Book interface locally
 interface Book {
@@ -82,6 +83,7 @@ function App() {
             Track your reading habits, discover insights about your collection, and visualize your literary journey.
           </p>
           <BookSearchBar onBookSelect={handleBookSelect} />
+          <RecentBooks books={books} onDeleteBook={handleDeleteBook} />
           <BookList books={books} onDeleteBook={handleDeleteBook} />
         </header>
         <main className="container">
