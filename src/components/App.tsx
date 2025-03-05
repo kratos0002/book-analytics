@@ -19,6 +19,7 @@ interface Book {
     thumbnail?: string;
     smallThumbnail?: string;
   };
+  completionStatus?: 'unread' | 'reading' | 'completed';
 }
 
 // Simple library utility functions
@@ -34,8 +35,11 @@ const getLibrary = (): Book[] => {
 
 const addToLibrary = (book: Book): void => {
   const books = getLibrary();
-  if (!books.some(b => b.id === book.id)) {
-    books.push(book);
+  // Set default completion status for new books
+  const newBook = { ...book, completionStatus: book.completionStatus || 'unread' };
+  
+  if (!books.some(b => b.id === newBook.id)) {
+    books.push(newBook);
     localStorage.setItem('books', JSON.stringify(books));
   }
 };
@@ -43,6 +47,14 @@ const addToLibrary = (book: Book): void => {
 const removeFromLibrary = (id: string): void => {
   const books = getLibrary().filter(book => book.id !== id);
   localStorage.setItem('books', JSON.stringify(books));
+};
+
+const updateBookStatus = (id: string, status: 'unread' | 'reading' | 'completed'): void => {
+  const books = getLibrary();
+  const updatedBooks = books.map(book => 
+    book.id === id ? { ...book, completionStatus: status } : book
+  );
+  localStorage.setItem('books', JSON.stringify(updatedBooks));
 };
 
 const isInLibrary = (id: string): boolean => {
@@ -74,6 +86,12 @@ function App() {
     setLastUpdated(new Date());
   };
 
+  const handleUpdateStatus = (bookId: string, status: 'unread' | 'reading' | 'completed') => {
+    updateBookStatus(bookId, status);
+    setBooks(getLibrary());
+    setLastUpdated(new Date());
+  };
+
   return (
     <Router>
       <div className="app-container">
@@ -84,9 +102,13 @@ function App() {
           </p>
           <BookSearchBar onBookSelect={handleBookSelect} />
           <RecentBooks books={books} onDeleteBook={handleDeleteBook} />
-          <BookList books={books} onDeleteBook={handleDeleteBook} />
         </header>
         <main className="container">
+          <BookList 
+            books={books} 
+            onDeleteBook={handleDeleteBook} 
+            onUpdateStatus={handleUpdateStatus}
+          />
           <Routes>
             <Route path="/" element={<Dashboard books={books} onDeleteBook={handleDeleteBook} />} />
           </Routes>
