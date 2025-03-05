@@ -49,8 +49,8 @@ const isInLibrary = (id: string): boolean => {
 };
 
 function App() {
-  const [books, setBooks] = useState([]);
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Load books from localStorage on initial render
   useEffect(() => {

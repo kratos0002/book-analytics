@@ -22,10 +22,10 @@ interface BookSearchBarProps {
 
 export default function BookSearchBar({ onBookSelect }: BookSearchBarProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const searchRef = useRef(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
