@@ -1,17 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Book } from '../types';
-import { addToLibrary, isInLibrary } from '../utils/library';
+
+// Define Book interface
+interface Book {
+  id: string;
+  title: string;
+  authors: string[];
+  description?: string;
+  categories?: string[];
+  pageCount?: number;
+  publishedDate?: string;
+  averageRating?: number;
+  imageLinks?: {
+    thumbnail?: string;
+    smallThumbnail?: string;
+  };
+}
 
 interface BookSearchBarProps {
-  onBookSelect?: (book: Book) => void;
+  onBookSelect: (book: Book) => void;
 }
 
 export default function BookSearchBar({ onBookSelect }: BookSearchBarProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Book[]>([]);
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -21,15 +35,12 @@ export default function BookSearchBar({ onBookSelect }: BookSearchBarProps) {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const searchBooks = async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
-      setResults([]);
-      return;
-    }
-
     setLoading(true);
     try {
       const response = await fetch(
@@ -38,7 +49,7 @@ export default function BookSearchBar({ onBookSelect }: BookSearchBarProps) {
       const data = await response.json();
       
       if (data.items) {
-        const books: Book[] = data.items.map((item: any) => ({
+        const books = data.items.map((item: any) => ({
           id: item.id,
           title: item.volumeInfo.title,
           authors: item.volumeInfo.authors || ['Unknown Author'],
@@ -61,25 +72,36 @@ export default function BookSearchBar({ onBookSelect }: BookSearchBarProps) {
     }
   };
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: any) => {
     const value = e.target.value;
     setQuery(value);
     setShowResults(true);
     
-    const timeoutId = setTimeout(() => {
-      searchBooks(value);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
+    if (value.length > 2) {
+      // Debounce search
+      const timeoutId = setTimeout(() => {
+        searchBooks(value);
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      setResults([]);
+    }
   };
 
   const handleAddToLibrary = (book: Book) => {
-    addToLibrary(book);
-    if (onBookSelect) {
-      onBookSelect(book);
+    onBookSelect(book);
+  };
+
+  const isInLibrary = (id: string): boolean => {
+    try {
+      const books = localStorage.getItem('books');
+      if (!books) return false;
+      return JSON.parse(books).some((book: Book) => book.id === id);
+    } catch (e) {
+      console.error('Error checking if book is in library', e);
+      return false;
     }
-    setShowResults(false);
-    setQuery('');
   };
 
   return (
@@ -88,7 +110,7 @@ export default function BookSearchBar({ onBookSelect }: BookSearchBarProps) {
         <input
           type="text"
           value={query}
-          onChange={handleSearch}
+          onChange={handleInputChange}
           placeholder="Search for books..."
           className="search-input"
         />
@@ -111,7 +133,7 @@ export default function BookSearchBar({ onBookSelect }: BookSearchBarProps) {
 
       {showResults && results.length > 0 && (
         <div className="search-results">
-          {results.map(book => (
+          {results.map((book: Book) => (
             <div key={book.id} className="search-result-item">
               {book.imageLinks?.smallThumbnail ? (
                 <img src={book.imageLinks.smallThumbnail} alt={book.title} className="search-result-image" />
