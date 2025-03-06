@@ -134,7 +134,7 @@ const BookMetadataEnrichment: React.FC<BookMetadataEnrichmentProps> = ({
         <div className="text-center">
           <p className="mb-4 text-gray-300">
             Enhance this book with AI-generated metadata including themes, mood, pacing, 
-            target audience, and more. This will use AI to analyze the book based on its existing information.
+            target audience, and more. This will use our AI service to analyze the book based on its existing information.
           </p>
           <button
             onClick={handleEnrichBook}

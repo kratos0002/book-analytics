@@ -7,32 +7,18 @@ import { Book, Theme, Character, Location } from '../models/BookTypes';
  * by filling in missing details and enriching existing information.
  */
 export class AIEnrichmentService {
-  private API_KEY: string | null = null;
+  // Use a predefined API key instead of requiring user input
+  // In a production environment, this would be a server-side secret
+  // For development/demo purposes, we're setting it here
+  private API_KEY: string = 'pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; // Replace with your actual API key
   private API_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
   
   /**
-   * Set the API key for Perplexity
-   * @param apiKey Perplexity API key
-   */
-  setAPIKey(apiKey: string): void {
-    this.API_KEY = apiKey;
-    localStorage.setItem('perplexity_api_key', apiKey);
-  }
-  
-  /**
-   * Check if the API key is set
+   * Check if the API key is set and valid
    * @returns True if API key is available
    */
   hasAPIKey(): boolean {
-    if (!this.API_KEY) {
-      const storedKey = localStorage.getItem('perplexity_api_key');
-      if (storedKey) {
-        this.API_KEY = storedKey;
-        return true;
-      }
-      return false;
-    }
-    return true;
+    return Boolean(this.API_KEY && this.API_KEY.startsWith('pplx-') && this.API_KEY.length > 20);
   }
   
   /**

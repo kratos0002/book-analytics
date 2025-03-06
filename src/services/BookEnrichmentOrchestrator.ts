@@ -189,90 +189,12 @@ export class BookEnrichmentOrchestrator {
   }
   
   /**
-   * Schedule a book for background enrichment using Perplexity AI
-   * @param book The book to enrich
-   */
-  async scheduleEnrichment(book: Book): Promise<void> {
-    // Only proceed if the book has an ISBN and isn't already in the queue
-    if (!book.isbn || this.isInEnrichmentQueue(book.isbn)) {
-      return;
-    }
-    
-    // Add to enrichment queue
-    this.addToEnrichmentQueue(book.isbn);
-    
-    // In a real production app, we might use a server-side queue or worker
-    // For now, we'll do the enrichment immediately in the background
-    
-    try {
-      // Check if we have the API key before attempting enrichment
-      if (!aiEnrichmentService.hasAPIKey()) {
-        console.log('Perplexity API key not set. Skipping enrichment.');
-        return;
-      }
-      
-      // Perform enrichment
-      const enrichedBook = await aiEnrichmentService.enrichBookMetadata(book);
-      
-      // Save to shared enriched database
-      this.saveEnrichedBook(enrichedBook);
-      
-      // Also update the user's copy of the book
-      bookMetadataService.saveBook(enrichedBook);
-      
-    } catch (error) {
-      console.error('Error enriching book:', error);
-      this.removeFromEnrichmentQueue(book.isbn);
-    }
-  }
-  
-  /**
-   * Process all books in the enrichment queue
-   * This could be called periodically or when the app has network connectivity
-   */
-  async processEnrichmentQueue(): Promise<void> {
-    try {
-      const queue = JSON.parse(localStorage.getItem(this.enrichmentQueueKey) || '[]');
-      
-      if (queue.length === 0 || !aiEnrichmentService.hasAPIKey()) {
-        return;
-      }
-      
-      // Process up to 5 books at a time to avoid overloading the API
-      const booksToProcess = queue.slice(0, 5);
-      
-      for (const isbn of booksToProcess) {
-        // Find book in user's library by ISBN
-        const userBooks = bookMetadataService.getAllBooks();
-        const bookToEnrich = userBooks.find(book => book.isbn === isbn);
-        
-        if (bookToEnrich) {
-          // Enrich and save
-          const enrichedBook = await aiEnrichmentService.enrichBookMetadata(bookToEnrich);
-          this.saveEnrichedBook(enrichedBook);
-          bookMetadataService.saveBook(enrichedBook);
-        }
-        
-        // Remove from queue regardless of success
-        this.removeFromEnrichmentQueue(isbn);
-      }
-    } catch (error) {
-      console.error('Error processing enrichment queue:', error);
-    }
-  }
-  
-  /**
    * Enrich book metadata using AI
    * @param book The book to enrich
    * @returns Promise with the BookAIEnrichment data
    */
   async enrichBookMetadata(book: Book): Promise<BookAIEnrichment> {
     try {
-      // Check if we have the API key before attempting enrichment
-      if (!aiEnrichmentService.hasAPIKey()) {
-        throw new Error('Perplexity API key not set. Cannot perform enrichment.');
-      }
-      
       // Generate enrichment data using AI
       const enrichedBook = await aiEnrichmentService.enrichBookMetadata(book);
       
@@ -319,6 +241,73 @@ export class BookEnrichmentOrchestrator {
         enrichmentSource: 'error',
         version: '1.0'
       };
+    }
+  }
+  
+  /**
+   * Schedule a book for background enrichment using Perplexity AI
+   * @param book The book to enrich
+   */
+  async scheduleEnrichment(book: Book): Promise<void> {
+    // Only proceed if the book has an ISBN and isn't already in the queue
+    if (!book.isbn || this.isInEnrichmentQueue(book.isbn)) {
+      return;
+    }
+    
+    // Add to enrichment queue
+    this.addToEnrichmentQueue(book.isbn);
+    
+    // In a real production app, we might use a server-side queue or worker
+    // For now, we'll do the enrichment immediately in the background
+    
+    try {
+      // Perform enrichment
+      const enrichedBook = await aiEnrichmentService.enrichBookMetadata(book);
+      
+      // Save to shared enriched database
+      this.saveEnrichedBook(enrichedBook);
+      
+      // Also update the user's copy of the book
+      bookMetadataService.saveBook(enrichedBook);
+      
+    } catch (error) {
+      console.error('Error enriching book:', error);
+      this.removeFromEnrichmentQueue(book.isbn);
+    }
+  }
+  
+  /**
+   * Process all books in the enrichment queue
+   * This could be called periodically or when the app has network connectivity
+   */
+  async processEnrichmentQueue(): Promise<void> {
+    try {
+      const queue = JSON.parse(localStorage.getItem(this.enrichmentQueueKey) || '[]');
+      
+      if (queue.length === 0) {
+        return;
+      }
+      
+      // Process up to 5 books at a time to avoid overloading the API
+      const booksToProcess = queue.slice(0, 5);
+      
+      for (const isbn of booksToProcess) {
+        // Find book in user's library by ISBN
+        const userBooks = bookMetadataService.getAllBooks();
+        const bookToEnrich = userBooks.find(book => book.isbn === isbn);
+        
+        if (bookToEnrich) {
+          // Enrich and save
+          const enrichedBook = await aiEnrichmentService.enrichBookMetadata(bookToEnrich);
+          this.saveEnrichedBook(enrichedBook);
+          bookMetadataService.saveBook(enrichedBook);
+        }
+        
+        // Remove from queue regardless of success
+        this.removeFromEnrichmentQueue(isbn);
+      }
+    } catch (error) {
+      console.error('Error processing enrichment queue:', error);
     }
   }
 }
