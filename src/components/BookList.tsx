@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useBookMetadata } from '../providers/BookMetadataProvider';
 import { Book } from '../models/BookTypes';
 import BookMetadataEnrichment from './BookMetadataEnrichment';
+import { Link } from 'react-router-dom';
 
 const BookList: React.FC = () => {
   const { books, deleteBook, updateBookSection } = useBookMetadata();
@@ -217,103 +218,109 @@ const BookList: React.FC = () => {
           <p className="text-gray-300">No books match your filters. Try adjusting your search criteria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredBooks.map(book => (
-            <div key={book.id} className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden shadow-lg border border-white/20 transition-transform hover:scale-105">
-              <div className="relative">
-                {book.coverImage ? (
-                  <img 
-                    src={book.coverImage} 
-                    alt={book.title} 
-                    className="w-full h-48 object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-48 bg-gray-800 flex items-center justify-center">
-                    <svg className="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                )}
-                
-                {/* Status Badge */}
-                <div className="absolute top-2 right-2">
-                  <select
-                    value={book.readingStatus}
-                    onChange={(e) => handleUpdateStatus(book.id, e.target.value as Book['readingStatus'])}
-                    className={`text-xs font-bold px-2 py-1 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                      book.readingStatus === 'to-read' ? 'bg-blue-600/80 text-blue-100' :
-                      book.readingStatus === 'reading' ? 'bg-green-600/80 text-green-100' :
-                      book.readingStatus === 'completed' ? 'bg-purple-600/80 text-purple-100' :
-                      book.readingStatus === 'abandoned' ? 'bg-red-600/80 text-red-100' :
-                      'bg-gray-600/80 text-gray-100'
-                    }`}
-                  >
-                    <option value="to-read">To Read</option>
-                    <option value="reading">Reading</option>
-                    <option value="completed">Completed</option>
-                    <option value="abandoned">Abandoned</option>
-                    <option value="reference">Reference</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="p-4">
-                <h3 className="font-bold text-lg mb-1 line-clamp-2">{book.title}</h3>
-                <p className="text-sm text-gray-300 mb-2">
-                  {book.authors.map(author => author.name).join(', ')}
-                </p>
-                
-                <div className="flex justify-between items-center mb-3">
-                  <StarRating rating={book.userRating} bookId={book.id} />
+        <>
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-400 italic">Click on a book card to edit its details or remove it from your library</p>
+            <Link to="/" className="text-sm text-indigo-400 hover:text-indigo-300">
+              ← Back to Dashboard
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredBooks.map(book => (
+              <div key={book.id} className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden shadow-lg border border-white/20 transition-transform hover:scale-105">
+                <div className="relative">
+                  {book.coverImage ? (
+                    <img 
+                      src={book.coverImage} 
+                      alt={book.title} 
+                      className="w-full h-48 object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-48 bg-gray-800 flex items-center justify-center">
+                      <svg className="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                  )}
                   
-                  <span className="text-xs text-gray-400">
-                    {book.pageCount ? `${book.pageCount} pages` : ''}
-                  </span>
-                </div>
-                
-                {book.genres && book.genres.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {book.genres.slice(0, 3).map(genre => (
-                      <span 
-                        key={genre} 
-                        className="text-xs bg-indigo-900/50 text-indigo-200 px-2 py-1 rounded-full"
-                      >
-                        {genre}
-                      </span>
-                    ))}
-                    {book.genres.length > 3 && (
-                      <span className="text-xs bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded-full">
-                        +{book.genres.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
-                
-                <div className="flex justify-between mt-4">
-                  <button
-                    onClick={() => handleEnrichBook(book.id)}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 focus:outline-none flex items-center"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Enrich Data
-                  </button>
-                  
+                  {/* Delete Button - More prominently positioned */}
                   <button
                     onClick={() => handleDeleteBook(book.id)}
-                    className="text-xs text-red-400 hover:text-red-300 focus:outline-none flex items-center"
+                    className="absolute top-2 left-2 p-1.5 rounded-full bg-red-600/80 text-white hover:bg-red-700 focus:outline-none"
+                    title="Remove from library"
                   >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                    Remove
                   </button>
+                  
+                  {/* Status Badge */}
+                  <div className="absolute top-2 right-2">
+                    <select
+                      value={book.readingStatus}
+                      onChange={(e) => handleUpdateStatus(book.id, e.target.value as Book['readingStatus'])}
+                      className={`text-xs font-bold px-2 py-1 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                        book.readingStatus === 'to-read' ? 'bg-blue-600/80 text-blue-100' :
+                        book.readingStatus === 'reading' ? 'bg-green-600/80 text-green-100' :
+                        book.readingStatus === 'completed' ? 'bg-purple-600/80 text-purple-100' :
+                        book.readingStatus === 'abandoned' ? 'bg-red-600/80 text-red-100' :
+                        'bg-gray-600/80 text-gray-100'
+                      }`}
+                    >
+                      <option value="to-read">To Read</option>
+                      <option value="reading">Reading</option>
+                      <option value="completed">Completed</option>
+                      <option value="abandoned">Abandoned</option>
+                      <option value="reference">Reference</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="p-4">
+                  <h3 className="font-bold text-lg mb-1 line-clamp-2">{book.title}</h3>
+                  <p className="text-sm text-gray-300 mb-2">
+                    {book.authors.map(author => author.name).join(', ')}
+                  </p>
+                  
+                  <div className="flex justify-between items-center mb-3">
+                    <StarRating rating={book.userRating} bookId={book.id} />
+                    
+                    <span className="text-xs text-gray-400">
+                      {book.pageCount ? `${book.pageCount} pages` : ''}
+                    </span>
+                  </div>
+                  
+                  {book.genres && book.genres.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {book.genres.slice(0, 3).map(genre => (
+                        <span 
+                          key={genre} 
+                          className="text-xs bg-indigo-900/50 text-indigo-200 px-2 py-1 rounded-full"
+                        >
+                          {genre}
+                        </span>
+                      ))}
+                      {book.genres.length > 3 && (
+                        <span className="text-xs bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded-full">
+                          +{book.genres.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="mt-2">
+                    <button
+                      onClick={() => handleEnrichBook(book.id)}
+                      className="w-full py-2 text-sm bg-indigo-600/60 text-white hover:bg-indigo-600/80 rounded-md transition-colors"
+                    >
+                      Enrich Metadata
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
       
       {/* Enrichment Modal */}

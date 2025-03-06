@@ -10,7 +10,7 @@ export class AIEnrichmentService {
   // Use a predefined API key instead of requiring user input
   // In a production environment, this would be a server-side secret
   // For development/demo purposes, we're setting it here
-  private API_KEY: string = 'pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; // Replace with your actual API key
+  private API_KEY: string = 'pplx-xxxxxxxxxxxxxxxxxxxx'; // <-- REPLACE THIS with your actual Perplexity API key (starts with pplx-)
   private API_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
   
   /**

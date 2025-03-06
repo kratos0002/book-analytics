@@ -236,7 +236,7 @@ const Dashboard = () => {
         <>
           {/* Summary Cards */}
           <div className="stats-grid">
-            <div className="summary-card">
+            <Link to="/books" className="summary-card hover:cursor-pointer hover:bg-white/15 transition-colors">
               <h3 className="summary-card-title">
                 <span className="card-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -246,8 +246,8 @@ const Dashboard = () => {
                 Total Books
               </h3>
               <p className="summary-card-value">{stats.totalBooks}</p>
-              <p className="summary-card-detail">{stats.completedBooks} with page count</p>
-            </div>
+              <p className="summary-card-detail">{stats.totalBooks} in your library</p>
+            </Link>
 
             <div className="summary-card">
               <h3 className="summary-card-title">
