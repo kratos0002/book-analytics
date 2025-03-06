@@ -1,52 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import BookSearchBar from './components/BookSearchBar';
-import { Book } from './types';
-import { addToLibrary, getLibrary, removeFromLibrary } from './utils/library';
+import BookList from './components/BookList';
+import { BookMetadataProvider } from './providers/BookMetadataProvider';
+import './index.css';
 
 function App() {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  // Load books from localStorage on initial render
-  useEffect(() => {
-    const libraryBooks = getLibrary();
-    setBooks(libraryBooks);
-    if (libraryBooks.length > 0) {
-      setLastUpdated(new Date());
-    }
-  }, []);
-
-  const handleBookSelect = (book: Book) => {
-    addToLibrary(book);
-    setBooks(getLibrary());
-    setLastUpdated(new Date());
-  };
-
-  const handleDeleteBook = (bookId: string) => {
-    removeFromLibrary(bookId);
-    setBooks(getLibrary());
-    setLastUpdated(new Date());
-  };
-
   return (
-    <Router>
-      <div className="app-container">
-        <header className="dashboard-header">
-          <h1 className="dashboard-title">Book Analytics Dashboard</h1>
-          <p className="dashboard-subtitle">
-            Track your reading habits, discover insights about your collection, and visualize your literary journey.
-          </p>
-          <BookSearchBar onBookSelect={handleBookSelect} />
-        </header>
-        <main className="container">
-          <Routes>
-            <Route path="/" element={<Dashboard books={books} onDeleteBook={handleDeleteBook} />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+    <BookMetadataProvider>
+      <Router>
+        <div className="app-container">
+          <header className="app-header">
+            <div className="header-content">
+              <h1 className="app-title">Book Analytics</h1>
+              <p className="app-subtitle">Track, analyze, and discover your reading journey</p>
+              <BookSearchBar />
+            </div>
+          </header>
+          
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/books" element={<BookList />} />
+            </Routes>
+          </main>
+        </div>
+      </Router>
+    </BookMetadataProvider>
   );
 }
 
