@@ -297,21 +297,92 @@ export class BookEnrichmentOrchestrator {
       
       console.log(`Starting enrichment process for book "${book.title}"...`);
       
-      // First, identify what data is missing
-      const missingFields = aiEnrichmentService.identifyMissingData(book);
-      console.log(`Fields needing enrichment: ${missingFields.join(', ')}`);
+      // First, try to get a complete book analysis directly
+      // This is more likely to produce a coherent, comprehensive analysis
+      let enrichedBook = { ...book };
+      let enrichmentFailed = false;
       
-      if (missingFields.length === 0) {
-        console.log(`Book "${book.title}" already has complete metadata.`);
-        this.removeFromEnrichmentQueue(book.isbn);
-        return;
+      try {
+        console.log(`Generating detailed book analysis for "${book.title}"...`);
+        const analysisData = await aiEnrichmentService.generateBookAnalysis(book);
+        
+        if (analysisData && analysisData.aiAnalysis && !analysisData.aiAnalysis.includes('Analysis is currently being generated')) {
+          // We got a good analysis - update the book with it
+          enrichedBook = {
+            ...book,
+            enrichedData: analysisData,
+            lastModified: new Date().toISOString()
+          };
+          
+          // If we have theme data, convert to proper theme objects
+          if (analysisData.themes && analysisData.themes.length > 0) {
+            enrichedBook.themes = analysisData.themes.map(themeName => ({
+              name: themeName,
+              relevance: 5, // Default high relevance
+              userNotes: `A significant theme in ${book.title}`
+            }));
+          }
+          
+          // If analysis provided genre information that the book doesn't have
+          if (!book.genres || book.genres.length === 0) {
+            // Extract potential genres from the analysis
+            const genreKeywords = ['classic', 'psychological', 'philosophical', 'crime', 'drama', 
+                                  'historical', 'romance', 'social', 'political', 'thriller', 'mystery'];
+            
+            const analysisText = analysisData.aiAnalysis.toLowerCase();
+            const potentialGenres = genreKeywords
+              .filter(keyword => analysisText.includes(keyword))
+              .map(keyword => {
+                // Convert to proper genre name
+                if (keyword === 'classic') return 'Classic Literature';
+                if (keyword === 'psychological') return 'Psychological Fiction';
+                if (keyword === 'philosophical') return 'Philosophical Fiction';
+                if (keyword === 'crime') return 'Crime Fiction';
+                if (keyword === 'drama') return 'Drama';
+                if (keyword === 'historical') return 'Historical Fiction';
+                if (keyword === 'romance') return 'Romance';
+                if (keyword === 'social') return 'Social Commentary';
+                if (keyword === 'political') return 'Political Fiction';
+                if (keyword === 'thriller') return 'Thriller';
+                if (keyword === 'mystery') return 'Mystery';
+                return keyword.charAt(0).toUpperCase() + keyword.slice(1);
+              });
+            
+            if (potentialGenres.length > 0) {
+              enrichedBook.genres = potentialGenres.slice(0, 3); // Take up to 3 genres
+            }
+          }
+          
+          console.log(`Successfully generated analysis for "${book.title}"`);
+        } else {
+          // If the general analysis wasn't good enough, fall back to field-by-field enrichment
+          enrichmentFailed = true;
+        }
+      } catch (error) {
+        console.error(`Error generating book analysis for "${book.title}":`, error);
+        enrichmentFailed = true;
       }
       
-      // Generate enriched metadata
-      console.log(`Generating enriched metadata for "${book.title}"...`);
-      const enrichedBook = await aiEnrichmentService.enrichBookMetadata(book);
+      // If the direct analysis approach failed, try the field-by-field approach
+      if (enrichmentFailed) {
+        console.log(`Falling back to field-by-field enrichment for "${book.title}"...`);
+        
+        // Identify what data is missing
+        const missingFields = aiEnrichmentService.identifyMissingData(book);
+        console.log(`Fields needing enrichment: ${missingFields.join(', ')}`);
+        
+        if (missingFields.length === 0) {
+          console.log(`Book "${book.title}" already has complete metadata.`);
+          this.removeFromEnrichmentQueue(book.isbn);
+          return;
+        }
+        
+        // Generate enriched metadata field by field
+        console.log(`Generating enriched metadata for "${book.title}"...`);
+        enrichedBook = await aiEnrichmentService.enrichBookMetadata(book);
+      }
       
-      // If the book has enriched data from Perplexity, save it to the shared database
+      // If the book has enriched data from AI, save it to the shared database
       if (enrichedBook.enrichedData && enrichedBook.isbn) {
         console.log(`Saving enriched data for book "${enrichedBook.title}" to shared database...`);
         
@@ -320,23 +391,6 @@ export class BookEnrichmentOrchestrator {
         
         // Save to shared enriched database for other users
         this.saveEnrichedBook(enrichedBook);
-        
-        // Generate a more detailed book analysis if needed
-        if (!enrichedBook.enrichedData.aiAnalysis || enrichedBook.enrichedData.aiAnalysis.length < 100) {
-          console.log(`Generating detailed analysis for "${book.title}"...`);
-          const analysisData = await aiEnrichmentService.generateBookAnalysis(enrichedBook);
-          
-          // Update the book's enriched data with the detailed analysis
-          enrichedBook.enrichedData = {
-            ...enrichedBook.enrichedData,
-            ...analysisData,
-            enrichmentDate: new Date().toISOString()
-          };
-          
-          // Save the updated book again
-          bookMetadataService.saveBook(enrichedBook);
-          this.saveEnrichedBook(enrichedBook);
-        }
       }
       
       // Remove from the enrichment queue
@@ -346,9 +400,61 @@ export class BookEnrichmentOrchestrator {
     } catch (error) {
       console.error(`Error during enrichment process for book "${book.title}":`, error);
       
-      // Remove from queue even if there was an error
-      if (book.isbn) {
-        this.removeFromEnrichmentQueue(book.isbn);
+      // Add retry logic for intermittent failures
+      try {
+        if (book.isbn) {
+          // Get the current queue to check retry count
+          const queue = JSON.parse(localStorage.getItem(this.enrichmentQueueKey) || '[]');
+          
+          // Implementation of a simple retry counter using localStorage
+          const retryKey = `retry_count_${book.isbn}`;
+          const retryCount = parseInt(localStorage.getItem(retryKey) || '0');
+          
+          if (retryCount < 3) { // Limit to 3 retries
+            // Increment retry counter
+            localStorage.setItem(retryKey, (retryCount + 1).toString());
+            
+            console.log(`Scheduling retry ${retryCount + 1}/3 for "${book.title}" in 5 seconds...`);
+            
+            // Wait 5 seconds and retry
+            setTimeout(() => {
+              this.processEnrichment(book).catch(err => {
+                console.error(`Retry failed for "${book.title}":`, err);
+              });
+            }, 5000);
+            
+            // Don't remove from queue yet since we're retrying
+            return;
+          } else {
+            // Clear retry counter on max retries
+            localStorage.removeItem(retryKey);
+            
+            // If all retries failed, update book with partial data or error message
+            const partialBook = { ...book };
+            if (!partialBook.enrichedData) {
+              partialBook.enrichedData = {
+                themes: [],
+                enrichmentDate: new Date().toISOString(),
+                enrichmentSource: 'error',
+                version: '1.0',
+                aiAnalysis: `We're currently experiencing difficulties analyzing "${book.title}". The analysis will be updated automatically when available.`
+              };
+              
+              // Save the book with the error message
+              bookMetadataService.saveBook(partialBook);
+            }
+            
+            // Remove from queue after max retries
+            this.removeFromEnrichmentQueue(book.isbn);
+          }
+        }
+      } catch (retryError) {
+        console.error(`Error setting up retry for "${book.title}":`, retryError);
+        
+        // Remove from queue if retry setup fails
+        if (book.isbn) {
+          this.removeFromEnrichmentQueue(book.isbn);
+        }
       }
     }
   }
