@@ -667,21 +667,15 @@ export class BookMetadataService {
    * @param googleBooksId The Google Books ID
    * @returns The BookAIEnrichment if found, undefined otherwise
    */
-  getBookEnrichment(googleBooksId: string): BookAIEnrichment | undefined {
+  async getBookEnrichment(googleBooksId: string): Promise<BookAIEnrichment | undefined> {
     try {
-      // Try to find the book in our library first
-      const book = this.getBookById(googleBooksId);
+      const book = await this.getBookByGoogleId(googleBooksId);
       if (book?.enrichedData) {
         return book.enrichedData;
       }
-      
-      // If not found in library, check for enriched books by Google Books ID
-      const enrichedBooksStr = localStorage.getItem('enriched_books_metadata') || '{}';
-      const enrichedBooks = JSON.parse(enrichedBooksStr);
-      
-      return enrichedBooks[googleBooksId];
+      return undefined;
     } catch (error) {
-      console.error('Error retrieving book enrichment:', error);
+      console.error('Error getting book enrichment:', error);
       return undefined;
     }
   }
@@ -708,6 +702,16 @@ export class BookMetadataService {
       }
     } catch (error) {
       console.error('Error saving book enrichment:', error);
+    }
+  }
+
+  async getBookByGoogleId(googleBooksId: string): Promise<Book | undefined> {
+    try {
+      const books = await this.getAllBooks();
+      return books.find(book => book.googleBooksId === googleBooksId);
+    } catch (error) {
+      console.error('Error getting book by Google Books ID:', error);
+      return undefined;
     }
   }
 }

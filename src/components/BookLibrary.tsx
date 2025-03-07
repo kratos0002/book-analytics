@@ -266,7 +266,7 @@ const BookLibrary: React.FC = () => {
           {filteredBooks.map(book => (
             <div 
               key={book.id} 
-              className="book-card bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-transform transform hover:scale-[1.02] hover:shadow-xl"
+              className="book-card bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-transform transform hover:scale-[1.02]"
             >
               <div className="relative h-48 overflow-hidden bg-gray-700">
                 {book.coverImage ? (

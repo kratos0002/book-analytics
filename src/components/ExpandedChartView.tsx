@@ -140,8 +140,8 @@ const ExpandedChartView: React.FC<ExpandedChartViewProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-11/12 h-5/6 max-w-7xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+      <div className="bg-white rounded-lg w-11/12 h-5/6 max-w-7xl overflow-hidden" style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <div>
             <h2 className="text-lg font-medium text-gray-900">{title}</h2>

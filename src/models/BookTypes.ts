@@ -4,10 +4,13 @@
  */
 
 // Core Book Model
+export type ReadingStatus = 'to-read' | 'reading' | 'completed' | 'abandoned' | 'reference';
+
 export interface Book {
   // Identification & Basic Metadata
   id: string;                   // Unique identifier
   isbn: string;                 // ISBN-13 when available
+  googleBooksId?: string;       // Google Books API ID
   title: string;                // Full title
   subtitle?: string;            // Subtitle if applicable
   originalTitle?: string;       // Original title if translated
@@ -51,7 +54,7 @@ export interface Book {
   
   // User-specific Data
   userRating: number;           // 1-5 scale with half points
-  readingStatus: 'to-read' | 'reading' | 'completed' | 'abandoned' | 'reference';
+  readingStatus: ReadingStatus;
   dateAdded: string;            // When added to collection
   startDate?: string;           // When started reading
   finishDate?: string;          // When finished reading
@@ -79,6 +82,7 @@ export interface Book {
   recommendedBy?: string;       // Person/source who recommended
   amazonRating?: number;        // Average rating on Amazon
   goodreadsRating?: number;     // Average rating on Goodreads
+  averageRating?: number;       // Average rating across platforms
   nytBestseller?: boolean;      // Was it a NYT bestseller
   
   // Analysis-specific Fields
@@ -88,6 +92,9 @@ export interface Book {
     conceptual?: number;        // 1-5 scale of conceptual difficulty
     structural?: number;        // 1-5 scale of structural complexity
   };
+  
+  // Enrichment Data
+  enrichedData?: BookAIEnrichment; // AI-enriched metadata
   
   // Metadata
   coverImage?: string;          // URL to cover image

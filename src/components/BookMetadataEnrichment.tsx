@@ -6,54 +6,51 @@ import { bookEnrichmentOrchestrator } from '../services/BookEnrichmentOrchestrat
 
 // Component props
 interface BookMetadataEnrichmentProps {
-  bookId: string;
+  book: Book;
   onEnrichmentComplete: () => void;
 }
 
 // Component
 const BookMetadataEnrichment: React.FC<BookMetadataEnrichmentProps> = ({ 
-  bookId, 
+  book, 
   onEnrichmentComplete 
 }) => {
-  const { books, updateBookMetadata } = useBookMetadata();
-  const [book, setBook] = useState<Book | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [enrichmentStatus, setEnrichmentStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [enrichedData, setEnrichedData] = useState<BookAIEnrichment | null>(null);
+  const { updateBookMetadata } = useBookMetadata();
+  const [enrichedData, setEnrichedData] = useState<BookAIEnrichment | undefined>(book.enrichedData);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [enrichmentStatus, setEnrichmentStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   // Load the book
   useEffect(() => {
-    const selectedBook = books.find(b => b.id === bookId) || null;
-    setBook(selectedBook);
-    
     // If the book already has enriched data, load it
-    if (selectedBook?.enrichedData) {
-      setEnrichedData(selectedBook.enrichedData);
+    if (book.enrichedData) {
+      setEnrichedData(book.enrichedData);
       setEnrichmentStatus('success');
     }
-  }, [bookId, books]);
+  }, [book.enrichedData]);
 
-  const handleEnrichBook = async () => {
-    if (!book) return;
-
-    setLoading(true);
-    setEnrichmentStatus('loading');
+  const handleEnrichBook = async (book: Book) => {
+    setIsLoading(true);
     setError(null);
-
+    
     try {
-      // Check if this book has already been enriched in our database
-      const existingEnrichment = await bookMetadataService.getBookEnrichment(book.googleBooksId);
+      // Check if enrichment already exists
+      if (book.googleBooksId) {
+        const existingEnrichment = await bookMetadataService.getBookEnrichment(book.googleBooksId);
+        if (existingEnrichment) {
+          setEnrichedData(existingEnrichment);
+          await updateBookMetadata(book.id, { enrichedData: existingEnrichment });
+          setEnrichmentStatus('success');
+          return;
+        }
+      }
       
-      if (existingEnrichment) {
-        // Use the existing enrichment
-        setEnrichedData(existingEnrichment);
-        await updateBookMetadata(book.id, { enrichedData: existingEnrichment });
-        setEnrichmentStatus('success');
-      } else {
-        // Generate new enrichment
-        const enrichment = await bookEnrichmentOrchestrator.enrichBookMetadata(book);
-        setEnrichedData(enrichment);
+      // If no existing enrichment, get new enrichment
+      const enrichmentData = await bookEnrichmentOrchestrator.enrichBookMetadata(book);
+      if (enrichmentData) {
+        setEnrichedData(enrichmentData);
+        await updateBookMetadata(book.id, { enrichedData });
         setEnrichmentStatus('success');
       }
     } catch (err) {
@@ -61,7 +58,7 @@ const BookMetadataEnrichment: React.FC<BookMetadataEnrichmentProps> = ({
       setError(err instanceof Error ? err.message : 'Failed to enrich book metadata');
       setEnrichmentStatus('error');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -137,11 +134,11 @@ const BookMetadataEnrichment: React.FC<BookMetadataEnrichmentProps> = ({
             target audience, and more. This will use our AI service to analyze the book based on its existing information.
           </p>
           <button
-            onClick={handleEnrichBook}
+            onClick={() => handleEnrichBook(book)}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            disabled={loading}
+            disabled={isLoading}
           >
-            {loading ? 'Processing...' : 'Enrich Metadata with AI'}
+            {isLoading ? 'Processing...' : 'Enrich Metadata with AI'}
           </button>
         </div>
       )}
@@ -161,7 +158,7 @@ const BookMetadataEnrichment: React.FC<BookMetadataEnrichmentProps> = ({
           <h4 className="font-bold mb-2">Error</h4>
           <p>{error || 'Something went wrong while enriching metadata.'}</p>
           <button
-            onClick={handleEnrichBook}
+            onClick={() => handleEnrichBook(book)}
             className="mt-3 px-3 py-1 bg-red-700 text-white rounded-md hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
             Try Again

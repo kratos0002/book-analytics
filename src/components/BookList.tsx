@@ -325,7 +325,21 @@ const BookList: React.FC = () => {
       
       {/* Enrichment Modal */}
       {showEnrichment && selectedBookId && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70 p-4">
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            padding: '1rem'
+          }}
+        >
           <div className="bg-gray-900 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-4 border-b border-gray-700">
               <h2 className="text-xl font-bold">Enrich Book Metadata</h2>
@@ -339,9 +353,12 @@ const BookList: React.FC = () => {
               </button>
             </div>
             <div className="p-4">
-              <BookMetadataEnrichment 
-                bookId={selectedBookId} 
-                onEnrichmentComplete={() => setShowEnrichment(false)} 
+              <BookMetadataEnrichment
+                book={books.find(b => b.id === selectedBookId)!}
+                onEnrichmentComplete={() => {
+                  setSelectedBookId(null);
+                  setShowEnrichment(false);
+                }}
               />
             </div>
           </div>
