@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useBookMetadata } from '../providers/BookMetadataProvider';
 import { Book } from '../models/BookTypes';
-import BookMetadataEnrichment from './BookMetadataEnrichment';
 import { Link } from 'react-router-dom';
 
 const BookList: React.FC = () => {
@@ -11,7 +10,6 @@ const BookList: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [sortBy, setSortBy] = useState<keyof Book>('dateAdded');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [showEnrichment, setShowEnrichment] = useState(false);
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
   
   // Get unique genres from all books
@@ -97,8 +95,8 @@ const BookList: React.FC = () => {
   
   // Open enrichment panel for a book
   const handleEnrichBook = (bookId: string) => {
-    setSelectedBookId(bookId);
-    setShowEnrichment(true);
+    // This functionality is now handled automatically in the background
+    console.log('Automatic enrichment in progress - no UI needed');
   };
   
   // Render star rating component
@@ -321,48 +319,6 @@ const BookList: React.FC = () => {
             ))}
           </div>
         </>
-      )}
-      
-      {/* Enrichment Modal */}
-      {showEnrichment && selectedBookId && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 50,
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            padding: '1rem'
-          }}
-        >
-          <div className="bg-gray-900 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-4 border-b border-gray-700">
-              <h2 className="text-xl font-bold">Enrich Book Metadata</h2>
-              <button 
-                onClick={() => setShowEnrichment(false)}
-                className="text-gray-400 hover:text-gray-200"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-4">
-              <BookMetadataEnrichment
-                book={books.find(b => b.id === selectedBookId)!}
-                onClose={() => {
-                  setSelectedBookId(null);
-                  setShowEnrichment(false);
-                }}
-              />
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

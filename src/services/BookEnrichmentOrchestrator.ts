@@ -176,9 +176,12 @@ export class BookEnrichmentOrchestrator {
       const fullBook = bookMetadataService.createFullBookFromMinimalData(minimalData);
       const savedBook = bookMetadataService.saveBook(fullBook);
       
-      // If the book has an ISBN and needs enrichment, schedule enrichment
-      if (savedBook.isbn && this.needsEnrichment(savedBook)) {
-        this.scheduleEnrichment(savedBook);
+      // Automatically start enrichment process for all new books with ISBN
+      if (savedBook.isbn) {
+        // Start immediate enrichment in the background
+        this.processEnrichment(savedBook).catch(error => {
+          console.error('Background enrichment failed:', error);
+        });
       }
       
       return savedBook;
@@ -266,8 +269,10 @@ export class BookEnrichmentOrchestrator {
       
       console.log(`Scheduled enrichment for book "${book.title}" (ISBN: ${book.isbn})`);
       
-      // Start the enrichment process asynchronously
-      this.processEnrichment(book);
+      // Start the enrichment process asynchronously immediately
+      this.processEnrichment(book).catch(error => {
+        console.error(`Error during enrichment of "${book.title}":`, error);
+      });
     } catch (error) {
       console.error('Error scheduling enrichment:', error);
     }
@@ -279,11 +284,15 @@ export class BookEnrichmentOrchestrator {
    */
   private async processEnrichment(book: Book): Promise<void> {
     try {
-      // Check if we have an API key for Perplexity
-      if (!aiEnrichmentService.hasAPIKey()) {
-        console.error('Cannot enrich book: Perplexity API key not set');
-        this.removeFromEnrichmentQueue(book.isbn);
+      // Skip if no ISBN - we use ISBN to store in shared database
+      if (!book.isbn) {
+        console.error('Cannot enrich book without ISBN');
         return;
+      }
+      
+      // Add to queue if not already there
+      if (!this.isInEnrichmentQueue(book.isbn)) {
+        this.addToEnrichmentQueue(book.isbn);
       }
       
       console.log(`Starting enrichment process for book "${book.title}"...`);

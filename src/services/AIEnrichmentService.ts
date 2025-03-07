@@ -10,7 +10,7 @@ export class AIEnrichmentService {
   // Use a predefined API key instead of requiring user input
   // In a production environment, this would be a server-side secret
   // For development/demo purposes, we're setting it here
-  private API_KEY: string = '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'; // <-- REPLACE THIS with your actual Perplexity API key (starts with pplx-)
+  private API_KEY: string = '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'; // <-- This is the Perplexity API key
   private API_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
   
   /**
@@ -18,7 +18,8 @@ export class AIEnrichmentService {
    * @returns True if API key is available
    */
   hasAPIKey(): boolean {
-    return Boolean(this.API_KEY && this.API_KEY.startsWith('pplx-') && this.API_KEY.length > 20);
+    // We now always return true since the API key is hardcoded
+    return true;
   }
   
   /**
