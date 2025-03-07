@@ -1,10 +1,13 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import BookSearchBar from './BookSearchBar';
 import BookLibrary from './BookLibrary';
+import Dashboard from './Dashboard';
 import { BookMetadataProvider } from '../providers/BookMetadataProvider';
 
 function App() {
+  const [activeTab, setActiveTab] = useState<'library' | 'dashboard'>('dashboard');
+  
   return (
     <BookMetadataProvider>
       <div className="min-h-screen bg-gray-900 text-white">
@@ -21,12 +24,27 @@ function App() {
             </div>
           </header>
           
+          {/* Navigation tabs */}
+          <div className="mb-6 border-b border-gray-800">
+            <div className="flex space-x-8">
+              <button 
+                className={`pb-3 px-1 ${activeTab === 'dashboard' ? 'border-b-2 border-blue-400 text-blue-400 font-medium' : 'text-gray-400 hover:text-gray-300'}`}
+                onClick={() => setActiveTab('dashboard')}
+              >
+                Dashboard
+              </button>
+              <button 
+                className={`pb-3 px-1 ${activeTab === 'library' ? 'border-b-2 border-blue-400 text-blue-400 font-medium' : 'text-gray-400 hover:text-gray-300'}`}
+                onClick={() => setActiveTab('library')}
+              >
+                My Library
+              </button>
+            </div>
+          </div>
+          
           <main>
-            <Router>
-              <Routes>
-                <Route path="/" element={<BookLibrary />} />
-              </Routes>
-            </Router>
+            {activeTab === 'dashboard' && <Dashboard />}
+            {activeTab === 'library' && <BookLibrary />}
           </main>
           
           <footer className="mt-12 pt-8 border-t border-gray-800 text-gray-500 text-sm">
