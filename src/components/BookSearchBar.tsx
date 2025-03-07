@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { bookMetadataService } from '../services/BookMetadataService';
 import { bookEnrichmentOrchestrator } from '../services/BookEnrichmentOrchestrator';
 import { useBookMetadata } from '../providers/BookMetadataProvider';
@@ -9,7 +9,24 @@ const BookSearchBar: React.FC = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResults, setShowResults] = useState(false);
   const { books, refreshBooks } = useBookMetadata();
+  const searchBarRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Add click away listener to close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchBarRef.current && !searchBarRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchTerm = e.target.value;
@@ -17,6 +34,7 @@ const BookSearchBar: React.FC = () => {
     
     if (searchTerm.trim().length < 3) {
       setSearchResults([]);
+      setShowResults(false);
       return;
     }
     
@@ -26,11 +44,18 @@ const BookSearchBar: React.FC = () => {
       
       const results = await bookMetadataService.searchGoogleBooks(searchTerm);
       setSearchResults(results);
+      setShowResults(true);
     } catch (err) {
       console.error('Search error:', err);
       setError('An error occurred while searching for books');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFocus = () => {
+    if (query.trim().length >= 3 && searchResults.length > 0) {
+      setShowResults(true);
     }
   };
 
@@ -55,6 +80,15 @@ const BookSearchBar: React.FC = () => {
         }
         return result;
       }));
+
+      // Auto-collapse search results after adding a book
+      setTimeout(() => {
+        setShowResults(false);
+        if (inputRef.current) {
+          inputRef.current.blur(); // Remove focus from input
+        }
+      }, 1500); // Wait 1.5 seconds so user can see the "Added" confirmation
+      
     } catch (err) {
       console.error('Error adding book:', err);
       setError('Failed to add book to your library');
@@ -63,13 +97,24 @@ const BookSearchBar: React.FC = () => {
     }
   };
 
+  const clearSearch = () => {
+    setQuery('');
+    setSearchResults([]);
+    setShowResults(false);
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
+  };
+
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={searchBarRef}>
       <div className="relative">
         <input
+          ref={inputRef}
           type="text"
           value={query}
           onChange={handleSearch}
+          onFocus={handleFocus}
           placeholder="Search for books..."
           className="search-input"
         />
@@ -80,6 +125,15 @@ const BookSearchBar: React.FC = () => {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           </div>
+        ) : query ? (
+          <button 
+            onClick={clearSearch}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+          >
+            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         ) : (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
@@ -95,7 +149,7 @@ const BookSearchBar: React.FC = () => {
         </div>
       )}
 
-      {searchResults.length > 0 && (
+      {showResults && searchResults.length > 0 && (
         <div className="absolute z-10 mt-2 w-full bg-white/10 backdrop-blur-md shadow-lg rounded-xl border border-white/20 overflow-hidden max-h-96 overflow-y-auto">
           {searchResults.map((book) => {
             const alreadyInLibrary = isBookInLibrary(book.id);
