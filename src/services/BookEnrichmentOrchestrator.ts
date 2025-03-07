@@ -507,6 +507,39 @@ export class BookEnrichmentOrchestrator {
       console.error('Error processing enrichment queue:', error);
     }
   }
+  
+  /**
+   * Force re-enrichment of a specific book
+   * @param bookId The ID of the book to re-enrich
+   * @returns Promise with success status
+   */
+  async forceReenrichBook(bookId: string): Promise<boolean> {
+    try {
+      // Find the book in the user's library
+      const books = bookMetadataService.getAllBooks();
+      const bookToReenrich = books.find(book => book.id === bookId);
+      
+      if (!bookToReenrich) {
+        console.error(`Book with ID "${bookId}" not found in library`);
+        return false;
+      }
+      
+      console.log(`Forcing re-enrichment for book "${bookToReenrich.title}" (ID: ${bookId})`);
+      
+      // Add the book to the enrichment queue (if it has an ISBN)
+      if (bookToReenrich.isbn) {
+        this.addToEnrichmentQueue(bookToReenrich.isbn);
+      }
+      
+      // Immediately start the enrichment process
+      await this.processEnrichment(bookToReenrich);
+      
+      return true;
+    } catch (error) {
+      console.error(`Error forcing re-enrichment for book ID "${bookId}":`, error);
+      return false;
+    }
+  }
 }
 
 // Create and export a singleton instance

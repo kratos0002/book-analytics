@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Book, ReadingStatus } from '../models/BookTypes';
 import { bookEnrichmentOrchestrator } from '../services/BookEnrichmentOrchestrator';
 
@@ -10,6 +10,7 @@ interface BookDetailsProps {
 const BookDetails: React.FC<BookDetailsProps> = ({ book, onClose }) => {
   // Check if the book is currently being enriched
   const isEnriching = book.isbn ? bookEnrichmentOrchestrator.isInEnrichmentQueue(book.isbn) : false;
+  const [isReenriching, setIsReenriching] = useState(false);
   
   // Determine completion level of the book metadata
   const metadataCompleteness = (): {percentage: number; status: 'low' | 'medium' | 'high'} => {
@@ -76,6 +77,24 @@ const BookDetails: React.FC<BookDetailsProps> = ({ book, onClose }) => {
       case 'abandoned': return 'bg-red-700 text-red-100';
       case 'reference': return 'bg-purple-700 text-purple-100';
       default: return 'bg-gray-700 text-gray-200';
+    }
+  };
+  
+  // Handle manual re-enrichment
+  const handleReenrich = async () => {
+    if (book.id) {
+      setIsReenriching(true);
+      const success = await bookEnrichmentOrchestrator.forceReenrichBook(book.id);
+      if (success) {
+        // We'll close the details and let the user refresh
+        setTimeout(() => {
+          alert('Book metadata is being refreshed. Please check back in a moment!');
+          onClose();
+        }, 1000);
+      } else {
+        setIsReenriching(false);
+        alert('There was an issue refreshing the book metadata. Please try again later.');
+      }
     }
   };
   
@@ -176,7 +195,7 @@ const BookDetails: React.FC<BookDetailsProps> = ({ book, onClose }) => {
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold">Book Metadata</h3>
             <div className="flex items-center">
-              {isEnriching ? (
+              {isEnriching || isReenriching ? (
                 <div className="flex items-center text-indigo-400">
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -185,7 +204,7 @@ const BookDetails: React.FC<BookDetailsProps> = ({ book, onClose }) => {
                   <span>Enriching...</span>
                 </div>
               ) : (
-                <div className="text-sm">
+                <div className="text-sm flex items-center">
                   <span className="text-gray-400">Completeness: </span>
                   <span className={`ml-1 font-medium ${
                     completeness.status === 'high' 
@@ -196,6 +215,15 @@ const BookDetails: React.FC<BookDetailsProps> = ({ book, onClose }) => {
                   }`}>
                     {completeness.percentage}%
                   </span>
+                  
+                  {/* Re-enrich button */}
+                  <button
+                    onClick={handleReenrich}
+                    disabled={isEnriching || isReenriching}
+                    className="ml-4 px-3 py-1 bg-indigo-700 hover:bg-indigo-800 text-white text-xs rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Refresh Metadata
+                  </button>
                 </div>
               )}
             </div>
@@ -214,9 +242,9 @@ const BookDetails: React.FC<BookDetailsProps> = ({ book, onClose }) => {
             ></div>
           </div>
           
-          {isEnriching && (
+          {(isEnriching || isReenriching) && (
             <p className="text-sm text-indigo-300 italic mb-4">
-              This book is currently being enriched with AI-generated metadata. Refresh later to see updated information.
+              This book is currently being enriched with metadata. Refresh or check back later to see updated information.
             </p>
           )}
         </div>

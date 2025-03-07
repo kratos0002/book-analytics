@@ -784,69 +784,260 @@ export class AIEnrichmentService {
     const title = book.title;
     const author = book.authors.map(a => a.name).join(', ');
     
-    // Check if this is a classic book
-    if (!this.isClassicLiterature(title, author)) {
-      return book;
-    }
+    // Convert to lowercase for better matching
+    const titleLower = title.toLowerCase();
+    const authorLower = author.toLowerCase();
     
-    const enhancedBook = { ...book };
+    // Check for specific classic books with exact matches
+    let specificClassicMatch = false;
     
-    // Get classic book analysis
-    const analysis = this.getClassicBookAnalysis(title, author);
-    const enrichment = this.getClassicBookEnrichment(title);
-    
-    if (analysis && enrichment) {
-      // Create or update enriched data
+    // Check for Crime and Punishment specifically
+    if ((titleLower.includes('crime') && titleLower.includes('punishment')) || 
+        ((authorLower.includes('dostoevsky') || authorLower.includes('dostoyevsky')) && titleLower.includes('crime'))) {
+      console.log('Detected "Crime and Punishment" - applying pre-defined classic book data');
+      specificClassicMatch = true;
+      
+      // Create a copy of the book to enhance
+      const enhancedBook = { ...book };
+      
+      // Apply the pre-defined enriched data for Crime and Punishment
       enhancedBook.enrichedData = {
-        ...(enhancedBook.enrichedData || {}),
-        ...enrichment,
-        aiAnalysis: analysis,
+        themes: ['Guilt and Punishment', 'Redemption', 'Nihilism', 'Psychological Turmoil', 'Moral Philosophy', 'Poverty', 'Christianity'],
+        mood: 'Dark, Intense, Psychological',
+        narrativeStyle: 'Third-person omniscient with intense psychological focus',
+        pacing: 'Slow',
+        targetAudience: 'Adult readers interested in psychological depth and moral philosophy',
+        complexity: 'Complex',
+        similarBooks: ['The Brothers Karamazov', 'Notes from Underground', 'The Idiot', 'Anna Karenina', 'The Master and Margarita'],
+        culturalSignificance: 'One of the most influential works of Russian literature that pioneered psychological realism and explored nihilism during a period of radical social change',
         enrichmentDate: new Date().toISOString(),
         enrichmentSource: 'classic_literature_database',
-        version: '1.0'
+        version: '1.0',
+        aiAnalysis: `"Crime and Punishment" is a seminal work of psychological realism and moral philosophy, widely regarded as one of the greatest novels ever written. Through the story of Raskolnikov, a tormented former student who murders an unscrupulous pawnbroker, Dostoevsky explores profound themes of guilt, redemption, and the human capacity for both cruelty and compassion. The novel brilliantly delves into the psychology of crime, examining how rationalization of immoral acts leads to spiritual and psychological suffering. Dostoevsky masterfully portrays the mental anguish and philosophical conflicts of his protagonist while weaving a complex narrative that functions both as a gripping crime thriller and a deep philosophical meditation on morality in an increasingly secular society. The novel's enduring significance lies in its unflinching examination of the human condition, the consequences of nihilism, and the possibility of spiritual renewal even after committing terrible acts.`
       };
       
       // Set genres if they're not already set
-      if (!enhancedBook.genres || enhancedBook.genres.length === 0) {
-        if (title.toLowerCase().includes('crime and punishment')) {
-          enhancedBook.genres = ['Classic Literature', 'Psychological Fiction', 'Philosophical Fiction'];
-          enhancedBook.subgenres = ['Russian Literature', 'Realism', 'Existentialist Fiction'];
-        } else if (title.toLowerCase().includes('war and peace')) {
-          enhancedBook.genres = ['Classic Literature', 'Historical Fiction', 'Philosophical Fiction'];
-          enhancedBook.subgenres = ['Russian Literature', 'War Fiction', 'Epic'];
-        } else if (title.toLowerCase().includes('pride and prejudice')) {
-          enhancedBook.genres = ['Classic Literature', 'Romance', 'Social Commentary'];
-          enhancedBook.subgenres = ['Regency Romance', 'Comedy of Manners', 'Domestic Fiction'];
+      enhancedBook.genres = ['Classic Literature', 'Psychological Fiction', 'Philosophical Fiction'];
+      enhancedBook.subgenres = ['Russian Literature', 'Realism', 'Existentialist Fiction'];
+      
+      // Add theme data
+      enhancedBook.themes = [
+        { name: 'Guilt and Punishment', relevance: 5, userNotes: 'The central theme of the novel, exploring how guilt manifests psychologically' },
+        { name: 'Redemption', relevance: 5, userNotes: 'Examines the possibility of spiritual renewal after committing terrible acts' },
+        { name: 'Nihilism', relevance: 4, userNotes: 'Explores the philosophical movement popular in 19th century Russia' },
+        { name: 'Psychological Turmoil', relevance: 5, userNotes: 'Depicts the mental anguish and internal conflict of the protagonist' },
+        { name: 'Moral Philosophy', relevance: 5, userNotes: 'Examines questions of right and wrong in an increasingly secular society' },
+        { name: 'Poverty', relevance: 4, userNotes: 'Shows how economic hardship influences moral choices' },
+        { name: 'Christianity', relevance: 4, userNotes: 'Explores Christian themes of suffering, confession, and redemption' }
+      ];
+      
+      // Set character data
+      enhancedBook.characters = [
+        {
+          name: 'Rodion Romanovich Raskolnikov',
+          role: 'protagonist',
+          archetype: 'The Fallen Hero',
+          demographics: { 
+            gender: 'Male', 
+            age: 'Young', 
+            background: 'Former student', 
+            occupation: 'None (poverty-stricken)'
+          },
+          personalityTraits: ['Intelligent', 'Tormented', 'Prideful', 'Compassionate'],
+          development: 'dynamic',
+          notes: 'A complex character who commits murder based on a philosophical theory but is ultimately undone by his conscience'
+        },
+        {
+          name: 'Sonya Semyonovna Marmeladova',
+          role: 'supporting',
+          archetype: 'The Pure Soul',
+          demographics: { 
+            gender: 'Female', 
+            age: 'Young', 
+            background: 'Poverty-stricken family', 
+            occupation: 'Prostitute (out of necessity)'
+          },
+          personalityTraits: ['Devout', 'Selfless', 'Compassionate', 'Resilient'],
+          development: 'static',
+          notes: 'Represents spiritual redemption and unconditional love despite suffering'
+        },
+        {
+          name: 'Porfiry Petrovich',
+          role: 'antagonist',
+          archetype: 'The Wise Detective',
+          demographics: { 
+            gender: 'Male', 
+            age: 'Middle-aged', 
+            background: 'Educated', 
+            occupation: 'Examining magistrate (detective)'
+          },
+          personalityTraits: ['Intelligent', 'Perceptive', 'Methodical', 'Psychological'],
+          development: 'static',
+          notes: 'Uses psychological tactics rather than evidence to pursue Raskolnikov'
         }
-      }
+      ];
       
-      // Add basic theme data if not present
-      if (!enhancedBook.themes || enhancedBook.themes.length === 0) {
-        enhancedBook.themes = (enrichment.themes || []).map(themeName => ({
-          name: themeName,
-          relevance: 5,
-          userNotes: `A major theme in ${title}`
-        }));
-      }
+      // Set narrative structure
+      enhancedBook.narrativeStructure = {
+        pov: 'third-person-limited',
+        tense: 'past',
+        timeline: 'linear'
+      };
       
-      // Set narrative structure if not defined
-      if (!enhancedBook.narrativeStructure || !enhancedBook.narrativeStructure.pov) {
-        enhancedBook.narrativeStructure = {
-          pov: title.toLowerCase().includes('crime and punishment') ? 'third-person-limited' : 'third-person-omniscient',
-          tense: 'past',
-          timeline: 'linear'
-        };
-      }
-      
-      // Set basic complexity data
+      // Set complexity data
       enhancedBook.complexity = {
         conceptual: 5,
         vocabulary: 4,
-        readability: 3
+        readability: 4,
+        structural: 3
       };
+      
+      // Set locations
+      enhancedBook.locations = [
+        {
+          name: 'St. Petersburg',
+          type: 'city',
+          realWorld: true,
+          importance: 5,
+          description: 'The primary setting, portrayed as cramped, hot, and oppressive, reflecting Raskolnikov\'s mental state'
+        },
+        {
+          name: 'Raskolnikov\'s room',
+          type: 'other',
+          realWorld: false,
+          importance: 5,
+          description: 'Described as a "coffin-like" garret, symbolizing his isolation and moral death'
+        }
+      ];
+      
+      return enhancedBook;
     }
     
-    return enhancedBook;
+    // Check for Brothers Karamazov specifically
+    if (titleLower.includes('brothers karamazov') || 
+        ((authorLower.includes('dostoevsky') || authorLower.includes('dostoyevsky')) && 
+         (titleLower.includes('brothers') || titleLower.includes('karamazov')))) {
+      console.log('Detected "The Brothers Karamazov" - applying pre-defined classic book data');
+      specificClassicMatch = true;
+      
+      // Create a copy of the book to enhance
+      const enhancedBook = { ...book };
+      
+      // Apply the pre-defined enriched data for The Brothers Karamazov
+      enhancedBook.enrichedData = {
+        themes: ['Faith and Doubt', 'Morality', 'Family', 'Free Will', 'Suffering', 'Redemption', 'Rationalism vs. Spirituality'],
+        mood: 'Philosophical, Intense, Psychological',
+        narrativeStyle: 'Third-person omniscient with philosophical digressions',
+        pacing: 'Slow',
+        targetAudience: 'Adult readers interested in philosophical depth, psychology, and existential questions',
+        complexity: 'Very Complex',
+        similarBooks: ['Crime and Punishment', 'The Idiot', 'Notes from Underground', 'The Possessed', 'War and Peace'],
+        culturalSignificance: 'Considered Dostoevsky\'s magnum opus and one of the greatest novels ever written, exploring the fundamental questions of human existence',
+        enrichmentDate: new Date().toISOString(),
+        enrichmentSource: 'classic_literature_database',
+        version: '1.0',
+        aiAnalysis: `"The Brothers Karamazov" is Fyodor Dostoevsky's culminating masterpiece, widely considered one of the greatest achievements in world literature. This profound philosophical novel explores the complex relationships between faith, doubt, reason, and morality through the story of the Karamazov family. At its center are three brothers—the intellectual Ivan, the sensual Dmitri, and the spiritual Alyosha—whose differing worldviews represent competing ideological forces in 19th-century Russia. The novel's murder mystery framework serves as a vehicle for deep explorations of theology, epistemology, and ethics. Dostoevsky brilliantly examines the existential question of God's existence, the problem of evil, and human freedom through characters who embody various philosophical positions. The novel's richness lies in its refusal to provide simple answers, instead presenting a complex dialectic where faith and doubt, reason and passion, selfishness and love continuously engage in dialogue. Through the character of the Grand Inquisitor and Ivan's rebellion against divine justice, Dostoevsky created some of literature's most profound meditations on human suffering and the desire for meaning. The Brothers Karamazov stands as the culmination of Dostoevsky's literary genius, demonstrating his unparalleled psychological insight and his ability to infuse dramatic narrative with philosophical depth.`
+      };
+      
+      // Set genres
+      enhancedBook.genres = ['Classic Literature', 'Philosophical Fiction', 'Psychological Fiction'];
+      enhancedBook.subgenres = ['Russian Literature', 'Family Drama', 'Existentialist Fiction'];
+      
+      // Add theme data
+      enhancedBook.themes = [
+        { name: 'Faith and Doubt', relevance: 5, userNotes: 'The central theological and philosophical conflict in the novel' },
+        { name: 'Morality', relevance: 5, userNotes: 'Examines the sources and nature of moral values' },
+        { name: 'Family', relevance: 5, userNotes: 'Explores the dysfunctional Karamazov family as a microcosm of society' },
+        { name: 'Free Will', relevance: 4, userNotes: 'Questions human freedom and responsibility' },
+        { name: 'Suffering', relevance: 4, userNotes: 'Explores the meaning and purpose of human suffering' },
+        { name: 'Redemption', relevance: 4, userNotes: 'Shows possibilities for spiritual and moral redemption' },
+        { name: 'Rationalism vs. Spirituality', relevance: 5, userNotes: 'Contrasts rational skepticism with spiritual faith' }
+      ];
+      
+      // Set narrative structure
+      enhancedBook.narrativeStructure = {
+        pov: 'third-person-omniscient',
+        tense: 'past',
+        timeline: 'linear'
+      };
+      
+      // Set complexity data
+      enhancedBook.complexity = {
+        conceptual: 5,
+        vocabulary: 5,
+        readability: 4,
+        structural: 4
+      };
+      
+      return enhancedBook;
+    }
+    
+    // General check for other classics if no specific match was found
+    if (!specificClassicMatch && this.isClassicLiterature(title, author)) {
+      // Check if this is a classic book
+      console.log(`Detected classic literature: "${title}" - applying general classic literature enrichment`);
+      
+      const enhancedBook = { ...book };
+      
+      // Get classic book analysis
+      const analysis = this.getClassicBookAnalysis(title, author);
+      const enrichment = this.getClassicBookEnrichment(title);
+      
+      if (analysis && enrichment) {
+        // Create or update enriched data
+        enhancedBook.enrichedData = {
+          ...(enhancedBook.enrichedData || {}),
+          ...enrichment,
+          aiAnalysis: analysis,
+          enrichmentDate: new Date().toISOString(),
+          enrichmentSource: 'classic_literature_database',
+          version: '1.0'
+        };
+        
+        // Set genres if they're not already set
+        if (!enhancedBook.genres || enhancedBook.genres.length === 0) {
+          if (title.toLowerCase().includes('crime and punishment')) {
+            enhancedBook.genres = ['Classic Literature', 'Psychological Fiction', 'Philosophical Fiction'];
+            enhancedBook.subgenres = ['Russian Literature', 'Realism', 'Existentialist Fiction'];
+          } else if (title.toLowerCase().includes('war and peace')) {
+            enhancedBook.genres = ['Classic Literature', 'Historical Fiction', 'Philosophical Fiction'];
+            enhancedBook.subgenres = ['Russian Literature', 'War Fiction', 'Epic'];
+          } else if (title.toLowerCase().includes('pride and prejudice')) {
+            enhancedBook.genres = ['Classic Literature', 'Romance', 'Social Commentary'];
+            enhancedBook.subgenres = ['Regency Romance', 'Comedy of Manners', 'Domestic Fiction'];
+          }
+        }
+        
+        // Add basic theme data if not present
+        if (!enhancedBook.themes || enhancedBook.themes.length === 0) {
+          enhancedBook.themes = (enrichment.themes || []).map(themeName => ({
+            name: themeName,
+            relevance: 5,
+            userNotes: `A major theme in ${title}`
+          }));
+        }
+        
+        // Set narrative structure if not defined
+        if (!enhancedBook.narrativeStructure || !enhancedBook.narrativeStructure.pov) {
+          enhancedBook.narrativeStructure = {
+            pov: title.toLowerCase().includes('crime and punishment') ? 'third-person-limited' : 'third-person-omniscient',
+            tense: 'past',
+            timeline: 'linear'
+          };
+        }
+        
+        // Set basic complexity data
+        enhancedBook.complexity = {
+          conceptual: 5,
+          vocabulary: 4,
+          readability: 3
+        };
+      }
+      
+      return enhancedBook;
+    }
+    
+    return book;
   }
 }
 
