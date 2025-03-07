@@ -297,13 +297,17 @@ export class BookEnrichmentOrchestrator {
       
       console.log(`Starting enrichment process for book "${book.title}"...`);
       
+      // Force refresh for all books to get the latest Goodreads data,
+      // even if they were enriched before
+      let shouldProcessEnrichment = true;
+      
       // First, try to get a complete book analysis directly
       // This is more likely to produce a coherent, comprehensive analysis
       let enrichedBook = { ...book };
       let enrichmentFailed = false;
       
       try {
-        console.log(`Generating detailed book analysis for "${book.title}"...`);
+        console.log(`Generating detailed book analysis for "${book.title}" using Goodreads data...`);
         const analysisData = await aiEnrichmentService.generateBookAnalysis(book);
         
         if (analysisData && analysisData.aiAnalysis && !analysisData.aiAnalysis.includes('Analysis is currently being generated')) {
@@ -319,7 +323,7 @@ export class BookEnrichmentOrchestrator {
             enrichedBook.themes = analysisData.themes.map(themeName => ({
               name: themeName,
               relevance: 5, // Default high relevance
-              userNotes: `A significant theme in ${book.title}`
+              userNotes: `A significant theme in ${book.title} according to Goodreads reviews`
             }));
           }
           
@@ -353,7 +357,7 @@ export class BookEnrichmentOrchestrator {
             }
           }
           
-          console.log(`Successfully generated analysis for "${book.title}"`);
+          console.log(`Successfully generated analysis for "${book.title}" using Goodreads data`);
         } else {
           // If the general analysis wasn't good enough, fall back to field-by-field enrichment
           enrichmentFailed = true;
@@ -371,30 +375,38 @@ export class BookEnrichmentOrchestrator {
         const missingFields = aiEnrichmentService.identifyMissingData(book);
         console.log(`Fields needing enrichment: ${missingFields.join(', ')}`);
         
-        if (missingFields.length === 0) {
+        if (missingFields.length === 0 && enrichedBook.enrichedData?.aiAnalysis) {
           console.log(`Book "${book.title}" already has complete metadata.`);
-          this.removeFromEnrichmentQueue(book.isbn);
-          return;
+        } else {
+          // Generate enriched metadata field by field regardless of existing data
+          // to get the latest Goodreads information
+          console.log(`Generating enriched metadata for "${book.title}" from Goodreads...`);
+          enrichedBook = await aiEnrichmentService.enrichBookMetadata(book);
         }
-        
-        // Generate enriched metadata field by field
-        console.log(`Generating enriched metadata for "${book.title}"...`);
-        enrichedBook = await aiEnrichmentService.enrichBookMetadata(book);
       }
       
       // If the book has enriched data from AI, save it to the shared database
-      if (enrichedBook.enrichedData && enrichedBook.isbn) {
+      if (enrichedBook.enrichedData) {
+        // Mark the source as Goodreads
+        if (enrichedBook.enrichedData.enrichmentSource !== 'classic_literature_database') {
+          enrichedBook.enrichedData.enrichmentSource = 'goodreads_via_perplexity';
+        }
+        
         console.log(`Saving enriched data for book "${enrichedBook.title}" to shared database...`);
         
         // Update user's copy of the book with enriched data
         bookMetadataService.saveBook(enrichedBook);
         
         // Save to shared enriched database for other users
-        this.saveEnrichedBook(enrichedBook);
+        if (enrichedBook.isbn) {
+          this.saveEnrichedBook(enrichedBook);
+        }
       }
       
       // Remove from the enrichment queue
-      this.removeFromEnrichmentQueue(book.isbn);
+      if (book.isbn) {
+        this.removeFromEnrichmentQueue(book.isbn);
+      }
       console.log(`Enrichment complete for book "${book.title}"`);
       
     } catch (error) {

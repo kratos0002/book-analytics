@@ -134,20 +134,20 @@ export class AIEnrichmentService {
     switch(section) {
       case 'themes':
         specificPrompt = `
-          Based on the book information above, identify 5-7 major themes in "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
+          Based on the book information above, look up Goodreads reviews and analyses of "${book.title}" by ${book.authors.map(a => a.name).join(', ')} to identify 5-7 major themes discussed by readers.
           For each theme:
-          1. Provide the name of the theme
-          2. Rate its relevance/importance to the book on a scale of 1-5
-          3. Include a brief note explaining how this theme manifests in the book
+          1. Provide the name of the theme as commonly mentioned in Goodreads reviews
+          2. Rate its relevance/importance to the book on a scale of 1-5 based on how frequently it's mentioned in reviews
+          3. Include brief notes or quotes from Goodreads reviews explaining how this theme manifests in the book
           
-          Do additional web research if needed to identify accurate themes.
+          Do additional web research specifically focusing on Goodreads reviews to identify accurate themes.
           
           Return the data as a valid JSON array with objects having the following structure:
           [
             {
               "name": "Theme name",
               "relevance": 5, // number between 1-5
-              "userNotes": "Brief explanation of theme's significance"
+              "userNotes": "Brief explanation of theme's significance, possibly quoting from Goodreads reviews"
             }
           ]
         `;
@@ -155,16 +155,16 @@ export class AIEnrichmentService {
         
       case 'characters':
         specificPrompt = `
-          Based on the book information above, identify 3-6 major characters in "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
-          For each character:
-          1. Provide the character's name
-          2. Identify their role (protagonist, antagonist, supporting, or minor)
-          3. Note their archetype if applicable
-          4. Include demographic information if known (gender, age, background, occupation)
-          5. List 2-4 key personality traits
-          6. Indicate if they undergo character development (static or dynamic)
+          Based on the book information above, look up character information for "${book.title}" by ${book.authors.map(a => a.name).join(', ')} on Goodreads and other literary sites.
+          For each major character mentioned in Goodreads reviews and discussions:
+          1. Provide the character's name as spelled in the book
+          2. Identify their role (protagonist, antagonist, supporting, or minor) based on how they're discussed in reviews
+          3. Note their archetype if mentioned in reviews
+          4. Include demographic information if known from Goodreads or other sources (gender, age, background, occupation)
+          5. List 2-4 key personality traits frequently mentioned in reader reviews
+          6. Indicate if they undergo character development based on reader discussions
           
-          Do additional web research to find accurate character information.
+          Do specific research on Goodreads character discussions and reviews to find accurate character information.
           
           Return the data as a valid JSON array with objects having the following structure:
           [
@@ -180,7 +180,7 @@ export class AIEnrichmentService {
               },
               "personalityTraits": ["intelligent", "determined", "compassionate"],
               "development": "dynamic", // either static or dynamic
-              "notes": "Brief description of character arc"
+              "notes": "Brief description of character arc, possibly referencing Goodreads reviews"
             }
           ]
         `;
@@ -188,15 +188,15 @@ export class AIEnrichmentService {
         
       case 'locations':
         specificPrompt = `
-          Based on the book information above, identify 2-5 major settings or locations in "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
-          For each location:
-          1. Provide the location name
+          Based on the book information above, look up important settings and locations for "${book.title}" by ${book.authors.map(a => a.name).join(', ')} on Goodreads and other literary sites.
+          For each location mentioned frequently in reader reviews:
+          1. Provide the location name as spelled in the book
           2. Classify the type (city, country, region, fictional, planet, or other)
           3. Indicate if it's a real-world place or fictional
-          4. Rate its importance to the narrative on a scale of 1-5
-          5. Include a brief description of the setting and its significance
+          4. Rate its importance to the narrative on a scale of 1-5 based on how frequently it's discussed in reviews
+          5. Include brief descriptions or quotes from Goodreads reviews about the setting and its significance
           
-          Do additional web research to find accurate location information.
+          Do specific research focusing on Goodreads discussions and reviews to find accurate location information.
           
           Return the data as a valid JSON array with objects having the following structure:
           [
@@ -205,7 +205,7 @@ export class AIEnrichmentService {
               "type": "city", // one of: city, country, region, fictional, planet, other
               "realWorld": true, // boolean indicating if real or fictional
               "importance": 4, // number between 1-5
-              "description": "Brief description of the location and its significance to the story"
+              "description": "Brief description of the location and its significance to the story, possibly from Goodreads reviews"
             }
           ]
         `;
@@ -213,15 +213,15 @@ export class AIEnrichmentService {
         
       case 'narrativeStructure':
         specificPrompt = `
-          Based on the book information above, analyze the narrative structure of "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
+          Based on the book information above, analyze the narrative structure of "${book.title}" by ${book.authors.map(a => a.name).join(', ')} as discussed on Goodreads and literary analysis sites.
           
-          Determine:
+          Research Goodreads reviews to determine:
           1. The point of view (POV) used (first-person, second-person, third-person-limited, third-person-omniscient, multiple, or other)
-          2. The primary tense used (past, present, future, or mixed)
-          3. The timeline structure (linear, non-linear, or multiple-timelines)
+          2. The primary tense used (past, present, future, or mixed) as noted in reader discussions
+          3. The timeline structure (linear, non-linear, or multiple-timelines) as described by readers
           4. The format if applicable (prose, verse, epistolary, mixed-media, or other)
           
-          Do additional web research to find accurate information about the book's narrative structure.
+          Search specifically for Goodreads reviews and discussions that mention the book's writing style and structure.
           
           Return the data as a valid JSON object with the following structure:
           {
@@ -235,21 +235,21 @@ export class AIEnrichmentService {
         
       case 'genres':
         specificPrompt = `
-          Based on the book information above, identify the most appropriate genres and subgenres for "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
+          Based on the book information above, search Goodreads shelves and categorizations to identify the most appropriate genres for "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
           
-          Provide:
-          1. 1-3 primary genres that best characterize the book
-          2. 2-4 more specific subgenres that apply
-          3. Determine if the book is fiction or non-fiction
-          4. Identify the target audience (children, middle-grade, young-adult, adult, or academic)
+          Look at how readers have shelved this book on Goodreads to provide:
+          1. 1-3 primary genres that have the most shelves/categorizations on Goodreads
+          2. 2-4 more specific subgenres that readers commonly use in their bookshelves
+          3. Determine if the book is fiction or non-fiction based on Goodreads classification
+          4. Identify the target audience (children, middle-grade, young-adult, adult, or academic) based on reader demographics mentioned in reviews
           
-          Do additional web research to find accurate genre information.
+          Focus specifically on how readers categorize this book on their Goodreads shelves and in reviews.
           
           Return the data as a valid JSON object with the following structure:
           {
             "genres": ["Genre1", "Genre2"],
             "subgenres": ["Subgenre1", "Subgenre2", "Subgenre3"],
-            "fiction": true, // boolean
+            "fiction": true,
             "audience": "adult" // one of: children, middle-grade, young-adult, adult, academic
           }
         `;
@@ -257,57 +257,58 @@ export class AIEnrichmentService {
         
       case 'complexity':
         specificPrompt = `
-          Based on the book information above, evaluate the complexity of "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
+          Based on the book information above, search Goodreads reviews for "${book.title}" by ${book.authors.map(a => a.name).join(', ')} to analyze its complexity as described by readers.
           
-          Rate on a scale of 1-5 (where 1 is simplest and 5 is most complex):
-          1. Readability: How difficult is the language to comprehend?
-          2. Vocabulary: How advanced or specialized is the vocabulary?
-          3. Conceptual difficulty: How complex are the ideas presented?
-          4. Structural complexity: How complex is the narrative structure?
+          Look for discussions about:
+          1. Readability (how easy or difficult readers found the text)
+          2. Vocabulary level (simple, moderate, or advanced) as mentioned in reviews
+          3. Conceptual difficulty (how challenging the ideas or themes were) based on reader comments
+          4. Structural complexity (how straightforward or intricate the narrative structure is) as described by reviewers
           
-          Do additional web research to find accurate information about the book's complexity.
+          Focus on reviews where readers specifically mention the difficulty level, accessibility, or complexity of the book.
           
           Return the data as a valid JSON object with the following structure:
           {
-            "readability": 3, // number between 1-5
-            "vocabulary": 4, // number between 1-5
-            "conceptual": 4, // number between 1-5
-            "structural": 3 // number between 1-5
+            "readability": 3, // number between 1-5, where 1 is very easy and 5 is very difficult
+            "vocabulary": 4, // number between 1-5, where 1 is simple and 5 is advanced
+            "conceptual": 4, // number between 1-5, where 1 is straightforward and 5 is highly complex
+            "structural": 3, // number between 1-5, where 1 is linear/simple and 5 is experimental/complex
+            "notes": "Brief summary of what readers say about the book's complexity, citing specific Goodreads reviews if possible"
           }
         `;
         break;
         
       case 'culturalContext':
         specificPrompt = `
-          Based on the book information above, analyze the cultural context of "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
+          Based on the book information above, search Goodreads and literary sites for discussions of the cultural context of "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
           
-          Identify:
-          1. Social groups, identities, or perspectives represented in the book
-          2. Elements of diversity or cultural significance
-          3. Any sensitive content that readers should be aware of
+          Research how reviewers on Goodreads discuss:
+          1. Groups, identities, or perspectives represented in the book
+          2. Elements of diversity or cultural significance mentioned in reviews
+          3. Any sensitivity warnings or content considerations that readers frequently mention
+          4. The book's historical or cultural importance based on reader discussions
           
-          Do additional web research to find accurate information about the book's cultural context.
+          Look specifically for Goodreads reviews and discussions that touch on representation, cultural impact, or societal relevance.
           
           Return the data as a valid JSON object with the following structure:
           {
-            "representation": ["Group1", "Group2"],
+            "representation": ["Group/Identity1", "Group/Identity2"],
             "diversityElements": ["Element1", "Element2"],
-            "sensitivity": "Brief note about potentially sensitive content, if applicable"
+            "sensitivity": "Any content warnings frequently mentioned by readers",
+            "culturalSignificance": "Brief summary of the book's cultural or historical importance based on Goodreads reviews"
           }
         `;
         break;
         
       default:
         specificPrompt = `
-          Based on the book information above, provide additional insights about "${book.title}" by ${book.authors.map(a => a.name).join(', ')}.
+          Please provide detailed information about ${section} for the book "${book.title}" by ${book.authors.map(a => a.name).join(', ')} based on Goodreads reviews and literary discussions.
           
-          Focus on any missing or incomplete information and provide factual, researched data that would enhance understanding of this book.
-          
-          Return the data as JSON with appropriate fields matching the book's data structure.
+          Return the information in a structured JSON format that's appropriate for the ${section} category.
         `;
     }
     
-    return `${baseInfo}\n\n${specificPrompt}`;
+    return baseInfo + specificPrompt;
   }
   
   /**
@@ -514,35 +515,40 @@ export class AIEnrichmentService {
         }
       }
       
-      // Generate a comprehensive analysis prompt
+      // Generate a comprehensive analysis prompt focused on Goodreads
       const prompt = `
-        Please provide a comprehensive analysis of the book:
+        Please provide a comprehensive analysis of the book by searching for information on Goodreads and other literary sites:
         
         Title: ${book.title}
         ${book.subtitle ? `Subtitle: ${book.subtitle}` : ''}
         Author(s): ${book.authors.map(a => a.name).join(', ')}
         ${book.genres && book.genres.length > 0 ? `Genres: ${book.genres.join(', ')}` : ''}
         ${book.description ? `Description: ${book.description}` : ''}
+        ${book.isbn ? `ISBN: ${book.isbn}` : ''}
         
-        Do thorough web research to create a detailed analysis of this book, including:
-        1. Major themes and their significance
-        2. Target audience and why it appeals to them
-        3. Cultural significance or impact
-        4. Writing style and narrative approach
-        5. Similar books that readers might enjoy
+        Search Goodreads reviews, discussions, and shelves for this book to create a detailed analysis, including:
+        1. The major themes identified by Goodreads reviewers and how they're discussed
+        2. The target audience based on the demographics of readers who've reviewed it
+        3. The cultural significance or impact according to reader discussions
+        4. The writing style and narrative approach as described in reviews
+        5. Similar books frequently mentioned or compared to this one in reviews
+        6. Notable quotes from the book that readers highlight most often
+        7. Overall sentiment and reception from readers (positive, mixed, negative)
         
         Return the analysis in the following JSON format:
         
         {
           "themes": ["Theme1", "Theme2", "Theme3"],
-          "mood": "e.g., Contemplative, Thrilling, etc.",
+          "mood": "e.g., Contemplative, Thrilling, etc. as described by readers",
           "narrativeStyle": "e.g., First-person, Third-person limited, etc.",
-          "pacing": "Slow, Medium, or Fast",
-          "targetAudience": "Who this book is best suited for",
-          "complexity": "Simple, Medium, or Complex",
+          "pacing": "Slow, Medium, or Fast - based on reader descriptions",
+          "targetAudience": "Who this book is best suited for according to reviews",
+          "complexity": "Simple, Medium, or Complex - based on how challenging readers found it",
           "similarBooks": ["Similar Book 1", "Similar Book 2"],
-          "culturalSignificance": "Brief explanation of impact or importance",
-          "aiAnalysis": "A paragraph summarizing key insights about this book"
+          "culturalSignificance": "Brief explanation of impact or importance based on reader discussions",
+          "popularQuotes": ["Quote 1", "Quote 2"],
+          "overallRating": "Average Goodreads rating if available",
+          "aiAnalysis": "A paragraph summarizing key insights about this book based on Goodreads reviews and reader discussions"
         }
       `;
       
@@ -566,9 +572,9 @@ export class AIEnrichmentService {
         complexity: data.complexity || 'Medium',
         similarBooks: data.similarBooks || [],
         culturalSignificance: data.culturalSignificance || 'Unknown',
-        aiAnalysis: data.aiAnalysis || `This book is a ${data.complexity || 'medium'} complexity work in the ${book.genres?.join(', ') || 'unknown'} genre.`,
+        aiAnalysis: data.aiAnalysis || `This book is a ${data.complexity || 'medium'} complexity work in the ${book.genres?.join(', ') || 'unknown'} genre. ${data.overallRating ? `It has an average rating of ${data.overallRating} on Goodreads.` : ''}`,
         enrichmentDate: new Date().toISOString(),
-        enrichmentSource: 'perplexity_ai',
+        enrichmentSource: 'goodreads_via_perplexity',
         version: '1.0'
       };
       
@@ -664,7 +670,11 @@ export class AIEnrichmentService {
       
       'war and peace': `"War and Peace" is Leo Tolstoy's monumental examination of early 19th-century Russian society during the Napoleonic Wars. The novel interweaves the stories of five aristocratic families against the backdrop of historical events, creating an unparalleled tapestry of human experience. Tolstoy brilliantly moves between intimate domestic scenes and grand historical movements, exploring how individuals both shape and are shaped by larger historical forces. The novel's extraordinary scope encompasses themes of free will versus determinism, the search for meaning in life, the nature of power, and the contrast between authentic living and societal expectations. Through characters like Pierre Bezukhov, Natasha Rostova, and Prince Andrei, Tolstoy examines the transformative power of love, suffering, and spiritual awakening. "War and Peace" remains a towering achievement in world literature for its psychological depth, philosophical insights, and its profound understanding of history as the collective actions of individuals rather than the will of "great men."`,
       
-      'pride and prejudice': `"Pride and Prejudice" is Jane Austen's masterful examination of social manners, marriage, and the limitations placed on women in early 19th-century England. Through the witty and independent Elizabeth Bennet and the proud Mr. Darcy, Austen crafts a love story that transcends its romantic plot to offer sharp social criticism and psychological insight. The novel brilliantly explores how personal growth comes through recognizing one's own flaws and prejudices. Elizabeth must overcome her quick judgments, while Darcy must humble himself and shed his class-based pride. Beyond the central romance, Austen presents a cast of memorable characters and various marriage models that reflect different social values of the era. The novel's enduring appeal stems from its perfect balance of comedy and serious moral reflection, its sparkling dialogue, and its nuanced portrayal of human relationships. Austen's keen observations about social status, economic pressure, and female autonomy remain remarkably relevant today, making this work both a product of its time and timelessly perceptive about human nature.`
+      'pride and prejudice': `"Pride and Prejudice" is Jane Austen's masterful examination of social manners, marriage, and the limitations placed on women in early 19th-century England. Through the witty and independent Elizabeth Bennet and the proud Mr. Darcy, Austen crafts a love story that transcends its romantic plot to offer sharp social criticism and psychological insight. The novel brilliantly explores how personal growth comes through recognizing one's own flaws and prejudices. Elizabeth must overcome her quick judgments, while Darcy must humble himself and shed his class-based pride. Beyond the central romance, Austen presents a cast of memorable characters and various marriage models that reflect different social values of the era. The novel's enduring appeal stems from its perfect balance of comedy and serious moral reflection, its sparkling dialogue, and its nuanced portrayal of human relationships. Austen's keen observations about social status, economic pressure, and female autonomy remain remarkably relevant today, making this work both a product of its time and timelessly perceptive about human nature.`,
+      
+      'brothers karamazov': `"The Brothers Karamazov" is Fyodor Dostoevsky's culminating masterpiece, widely considered one of the greatest achievements in world literature. This profound philosophical novel explores the complex relationships between faith, doubt, reason, and morality through the story of the Karamazov family. At its center are three brothers—the intellectual Ivan, the sensual Dmitri, and the spiritual Alyosha—whose differing worldviews represent competing ideological forces in 19th-century Russia. The novel's murder mystery framework serves as a vehicle for deep explorations of theology, epistemology, and ethics. Dostoevsky brilliantly examines the existential question of God's existence, the problem of evil, and human freedom through characters who embody various philosophical positions. The novel's richness lies in its refusal to provide simple answers, instead presenting a complex dialectic where faith and doubt, reason and passion, selfishness and love continuously engage in dialogue. Through the character of the Grand Inquisitor and Ivan's rebellion against divine justice, Dostoevsky created some of literature's most profound meditations on human suffering and the desire for meaning. The Brothers Karamazov stands as the culmination of Dostoevsky's literary genius, demonstrating his unparalleled psychological insight and his ability to infuse dramatic narrative with philosophical depth.`,
+      
+      'the brothers karamazov': `"The Brothers Karamazov" is Fyodor Dostoevsky's culminating masterpiece, widely considered one of the greatest achievements in world literature. This profound philosophical novel explores the complex relationships between faith, doubt, reason, and morality through the story of the Karamazov family. At its center are three brothers—the intellectual Ivan, the sensual Dmitri, and the spiritual Alyosha—whose differing worldviews represent competing ideological forces in 19th-century Russia. The novel's murder mystery framework serves as a vehicle for deep explorations of theology, epistemology, and ethics. Dostoevsky brilliantly examines the existential question of God's existence, the problem of evil, and human freedom through characters who embody various philosophical positions. The novel's richness lies in its refusal to provide simple answers, instead presenting a complex dialectic where faith and doubt, reason and passion, selfishness and love continuously engage in dialogue. Through the character of the Grand Inquisitor and Ivan's rebellion against divine justice, Dostoevsky created some of literature's most profound meditations on human suffering and the desire for meaning. The Brothers Karamazov stands as the culmination of Dostoevsky's literary genius, demonstrating his unparalleled psychological insight and his ability to infuse dramatic narrative with philosophical depth.`
     };
     
     // Check for exact matches first
@@ -678,6 +688,12 @@ export class AIEnrichmentService {
     if ((authorLower.includes('dostoevsky') || authorLower.includes('dostoyevsky')) && 
         titleLower.includes('crime')) {
       return classicBookAnalyses['crime and punishment'];
+    }
+    
+    // If no exact match, but author is Dostoevsky and title contains Brothers Karamazov
+    if ((authorLower.includes('dostoevsky') || authorLower.includes('dostoyevsky')) && 
+        (titleLower.includes('brothers') || titleLower.includes('karamazov'))) {
+      return classicBookAnalyses['brothers karamazov'];
     }
     
     return null;
@@ -724,6 +740,28 @@ export class AIEnrichmentService {
         complexity: 'Medium',
         similarBooks: ['Emma', 'Sense and Sensibility', 'Jane Eyre', 'Middlemarch', 'Persuasion'],
         culturalSignificance: 'A landmark of English literature that offers enduring insights into social realities, marriage, and human relationships'
+      },
+      
+      'brothers karamazov': {
+        themes: ['Faith and Doubt', 'Morality', 'Family', 'Free Will', 'Suffering', 'Redemption', 'Rationalism vs. Spirituality'],
+        mood: 'Philosophical, Intense, Psychological',
+        narrativeStyle: 'Third-person omniscient with philosophical digressions',
+        pacing: 'Slow',
+        targetAudience: 'Adult readers interested in philosophical depth, psychology, and existential questions',
+        complexity: 'Very Complex',
+        similarBooks: ['Crime and Punishment', 'The Idiot', 'Notes from Underground', 'The Possessed', 'War and Peace'],
+        culturalSignificance: 'Considered Dostoevsky\'s magnum opus and one of the greatest novels ever written, exploring the fundamental questions of human existence'
+      },
+      
+      'the brothers karamazov': {
+        themes: ['Faith and Doubt', 'Morality', 'Family', 'Free Will', 'Suffering', 'Redemption', 'Rationalism vs. Spirituality'],
+        mood: 'Philosophical, Intense, Psychological',
+        narrativeStyle: 'Third-person omniscient with philosophical digressions',
+        pacing: 'Slow',
+        targetAudience: 'Adult readers interested in philosophical depth, psychology, and existential questions',
+        complexity: 'Very Complex',
+        similarBooks: ['Crime and Punishment', 'The Idiot', 'Notes from Underground', 'The Possessed', 'War and Peace'],
+        culturalSignificance: 'Considered Dostoevsky\'s magnum opus and one of the greatest novels ever written, exploring the fundamental questions of human existence'
       }
     };
     
