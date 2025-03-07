@@ -1,120 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Dashboard from './Dashboard';
 import BookSearchBar from './BookSearchBar';
-import BookList from './BookList';
-import RecentBooks from './RecentBooks';
-
-// Define Book interface locally
-interface Book {
-  id: string;
-  title: string;
-  authors: string[];
-  description?: string;
-  categories?: string[];
-  pageCount?: number;
-  publishedDate?: string;
-  averageRating?: number;
-  imageLinks?: {
-    thumbnail?: string;
-    smallThumbnail?: string;
-  };
-  completionStatus?: 'unread' | 'reading' | 'completed';
-}
-
-// Simple library utility functions
-const getLibrary = (): Book[] => {
-  try {
-    const books = localStorage.getItem('books');
-    return books ? JSON.parse(books) : [];
-  } catch (e) {
-    console.error('Failed to parse books from localStorage', e);
-    return [];
-  }
-};
-
-const addToLibrary = (book: Book): void => {
-  const books = getLibrary();
-  // Set default completion status for new books
-  const newBook = { ...book, completionStatus: book.completionStatus || 'unread' };
-  
-  if (!books.some(b => b.id === newBook.id)) {
-    books.push(newBook);
-    localStorage.setItem('books', JSON.stringify(books));
-  }
-};
-
-const removeFromLibrary = (id: string): void => {
-  const books = getLibrary().filter(book => book.id !== id);
-  localStorage.setItem('books', JSON.stringify(books));
-};
-
-const updateBookStatus = (id: string, status: 'unread' | 'reading' | 'completed'): void => {
-  const books = getLibrary();
-  const updatedBooks = books.map(book => 
-    book.id === id ? { ...book, completionStatus: status } : book
-  );
-  localStorage.setItem('books', JSON.stringify(updatedBooks));
-};
-
-const isInLibrary = (id: string): boolean => {
-  return getLibrary().some(book => book.id === id);
-};
+import BookLibrary from './BookLibrary';
+import { BookMetadataProvider } from '../providers/BookMetadataProvider';
 
 function App() {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  // Load books from localStorage on initial render
-  useEffect(() => {
-    const libraryBooks = getLibrary();
-    setBooks(libraryBooks);
-    if (libraryBooks.length > 0) {
-      setLastUpdated(new Date());
-    }
-  }, []);
-
-  const handleBookSelect = (book: Book) => {
-    addToLibrary(book);
-    setBooks(getLibrary());
-    setLastUpdated(new Date());
-  };
-
-  const handleDeleteBook = (bookId: string) => {
-    removeFromLibrary(bookId);
-    setBooks(getLibrary());
-    setLastUpdated(new Date());
-  };
-
-  const handleUpdateStatus = (bookId: string, status: 'unread' | 'reading' | 'completed') => {
-    updateBookStatus(bookId, status);
-    setBooks(getLibrary());
-    setLastUpdated(new Date());
-  };
-
   return (
-    <Router>
-      <div className="app-container">
-        <header className="dashboard-header">
-          <h1 className="dashboard-title">Book Analytics Dashboard</h1>
-          <p className="dashboard-subtitle">
-            Track your reading habits, discover insights about your collection, and visualize your literary journey.
-          </p>
-          <BookSearchBar onBookSelect={handleBookSelect} />
-          <RecentBooks books={books} onDeleteBook={handleDeleteBook} />
-        </header>
-        <main className="container">
-          <BookList 
-            books={books} 
-            onDeleteBook={handleDeleteBook} 
-            onUpdateStatus={handleUpdateStatus}
-          />
-          <Routes>
-            <Route path="/" element={<Dashboard books={books} onDeleteBook={handleDeleteBook} />} />
-          </Routes>
-        </main>
+    <BookMetadataProvider>
+      <div className="min-h-screen bg-gray-900 text-white">
+        <div className="container mx-auto px-4 py-8">
+          <header className="mb-8">
+            <h1 className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+              Book Analytics Dashboard
+            </h1>
+            <p className="text-gray-400">
+              Search for books, manage your library, and gain insights about your reading habits
+            </p>
+            <div className="mt-4">
+              <BookSearchBar />
+            </div>
+          </header>
+          
+          <main>
+            <Router>
+              <Routes>
+                <Route path="/" element={<BookLibrary />} />
+              </Routes>
+            </Router>
+          </main>
+          
+          <footer className="mt-12 pt-8 border-t border-gray-800 text-gray-500 text-sm">
+            <p>© {new Date().getFullYear()} Book Analytics Dashboard. All rights reserved.</p>
+          </footer>
+        </div>
       </div>
-    </Router>
+    </BookMetadataProvider>
   );
 }
 
