@@ -355,7 +355,7 @@ const BookList: React.FC = () => {
             <div className="p-4">
               <BookMetadataEnrichment
                 book={books.find(b => b.id === selectedBookId)!}
-                onEnrichmentComplete={() => {
+                onClose={() => {
                   setSelectedBookId(null);
                   setShowEnrichment(false);
                 }}

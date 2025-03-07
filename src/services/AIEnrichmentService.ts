@@ -1,4 +1,4 @@
-import { Book, Theme, Character, Location } from '../models/BookTypes';
+import { Book, Theme, Character, Location, BookAIEnrichment } from '../models/BookTypes';
 
 /**
  * AIEnrichmentService
@@ -10,7 +10,7 @@ export class AIEnrichmentService {
   // Use a predefined API key instead of requiring user input
   // In a production environment, this would be a server-side secret
   // For development/demo purposes, we're setting it here
-  private API_KEY: string = 'pplx-xxxxxxxxxxxxxxxxxxxx'; // <-- REPLACE THIS with your actual Perplexity API key (starts with pplx-)
+  private API_KEY: string = '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'; // <-- REPLACE THIS with your actual Perplexity API key (starts with pplx-)
   private API_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
   
   /**
@@ -62,6 +62,53 @@ export class AIEnrichmentService {
   }
   
   /**
+   * Identify missing data fields in a book object
+   * @param book The book to analyze
+   * @returns Array of keys that need enrichment
+   */
+  identifyMissingData(book: Book): (keyof Book)[] {
+    const missingFields: (keyof Book)[] = [];
+    
+    // Check for empty arrays or undefined values in key fields
+    if (!book.themes || book.themes.length === 0) {
+      missingFields.push('themes');
+    }
+    
+    if (!book.characters || book.characters.length === 0) {
+      missingFields.push('characters');
+    }
+    
+    if (!book.locations || book.locations.length === 0) {
+      missingFields.push('locations');
+    }
+    
+    if (!book.narrativeStructure || !book.narrativeStructure.pov) {
+      missingFields.push('narrativeStructure');
+    }
+    
+    // Check for missing genre information
+    if (!book.genres || book.genres.length === 0) {
+      missingFields.push('genres');
+    }
+    
+    if (!book.subgenres || book.subgenres.length === 0) {
+      missingFields.push('subgenres');
+    }
+    
+    // Check for missing complexity information
+    if (!book.complexity || !book.complexity.conceptual) {
+      missingFields.push('complexity');
+    }
+    
+    // Check for missing cultural context
+    if (!book.culturalContext || !book.culturalContext.representation) {
+      missingFields.push('culturalContext');
+    }
+    
+    return missingFields;
+  }
+  
+  /**
    * Generate a book analysis prompt based on available information
    * @param book The book data to analyze
    * @param section The section to focus on
@@ -75,7 +122,7 @@ export class AIEnrichmentService {
       Publisher: ${book.publisher}
       Published Date: ${book.publishedDate}
       Description: ${book.description}
-      ${book.genres.length > 0 ? `Genres: ${book.genres.join(', ')}` : ''}
+      ${book.genres && book.genres.length > 0 ? `Genres: ${book.genres.join(', ')}` : ''}
       ${book.pageCount ? `Page Count: ${book.pageCount}` : ''}
       ${book.language ? `Language: ${book.language}` : ''}
       ${book.isbn ? `ISBN: ${book.isbn}` : ''}
@@ -91,6 +138,8 @@ export class AIEnrichmentService {
           1. Provide the name of the theme
           2. Rate its relevance/importance to the book on a scale of 1-5
           3. Include a brief note explaining how this theme manifests in the book
+          
+          Do additional web research if needed to identify accurate themes.
           
           Return the data as a valid JSON array with objects having the following structure:
           [
@@ -113,6 +162,8 @@ export class AIEnrichmentService {
           4. Include demographic information if known (gender, age, background, occupation)
           5. List 2-4 key personality traits
           6. Indicate if they undergo character development (static or dynamic)
+          
+          Do additional web research to find accurate character information.
           
           Return the data as a valid JSON array with objects having the following structure:
           [
@@ -144,6 +195,8 @@ export class AIEnrichmentService {
           4. Rate its importance to the narrative on a scale of 1-5
           5. Include a brief description of the setting and its significance
           
+          Do additional web research to find accurate location information.
+          
           Return the data as a valid JSON array with objects having the following structure:
           [
             {
@@ -167,6 +220,8 @@ export class AIEnrichmentService {
           3. The timeline structure (linear, non-linear, or multiple-timelines)
           4. The format if applicable (prose, verse, epistolary, mixed-media, or other)
           
+          Do additional web research to find accurate information about the book's narrative structure.
+          
           Return the data as a valid JSON object with the following structure:
           {
             "pov": "third-person-limited", // one of: first-person, second-person, third-person-limited, third-person-omniscient, multiple, other
@@ -186,6 +241,8 @@ export class AIEnrichmentService {
           2. 2-4 more specific subgenres that apply
           3. Determine if the book is fiction or non-fiction
           4. Identify the target audience (children, middle-grade, young-adult, adult, or academic)
+          
+          Do additional web research to find accurate genre information.
           
           Return the data as a valid JSON object with the following structure:
           {
@@ -207,6 +264,8 @@ export class AIEnrichmentService {
           3. Conceptual difficulty: How complex are the ideas presented?
           4. Structural complexity: How complex is the narrative structure?
           
+          Do additional web research to find accurate information about the book's complexity.
+          
           Return the data as a valid JSON object with the following structure:
           {
             "readability": 3, // number between 1-5
@@ -225,6 +284,8 @@ export class AIEnrichmentService {
           1. Social groups, identities, or perspectives represented in the book
           2. Elements of diversity or cultural significance
           3. Any sensitive content that readers should be aware of
+          
+          Do additional web research to find accurate information about the book's cultural context.
           
           Return the data as a valid JSON object with the following structure:
           {
@@ -249,260 +310,231 @@ export class AIEnrichmentService {
   }
   
   /**
-   * Try to parse JSON from the AI response, handling potential formatting issues
-   * @param response The raw response from the AI
+   * Parse JSON data from Perplexity API response
+   * @param response Raw response from API
    * @returns Parsed JSON data
    */
-  private safeParseJSON(response: string): any {
+  private parseJsonFromResponse(response: string): any {
     try {
-      // Try direct parsing first
-      return JSON.parse(response);
-    } catch (e) {
-      // If that fails, try to extract JSON from the response
-      try {
-        const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) || 
-                         response.match(/```\n([\s\S]*?)\n```/) ||
-                         response.match(/{[\s\S]*?}/);
-                         
-        if (jsonMatch && jsonMatch[1]) {
-          return JSON.parse(jsonMatch[1]);
-        } else if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-        
-        // As a last resort, try to find anything that looks like JSON
-        const possibleJson = response.match(/(\[[\s\S]*?\]|{[\s\S]*?})/);
-        if (possibleJson) {
-          return JSON.parse(possibleJson[0]);
-        }
-        
-        throw new Error('Could not extract valid JSON from response');
-      } catch (innerError) {
-        console.error('Error parsing AI response as JSON:', innerError);
-        throw new Error('Failed to parse AI response as JSON: ' + response);
+      // Look for JSON pattern in the response
+      const jsonPattern = /```json\n([\s\S]*?)\n```|^\[([\s\S]*)\]$|^\{([\s\S]*)\}$/m;
+      const match = response.match(jsonPattern);
+      
+      if (match) {
+        // Use the matched JSON content
+        const jsonContent = match[1] || match[2] || match[3] || response;
+        return JSON.parse(jsonContent.trim());
       }
-    }
-  }
-  
-  /**
-   * Use Perplexity to generate book themes
-   * @param book The book to analyze
-   * @returns Promise with generated themes
-   */
-  async generateThemes(book: Book): Promise<Theme[]> {
-    try {
-      const prompt = this.generatePrompt(book, 'themes');
-      const response = await this.queryPerplexity(prompt);
-      const themes = this.safeParseJSON(response);
       
-      return themes;
+      // If no JSON pattern found, try parsing the whole response
+      return JSON.parse(response.trim());
     } catch (error) {
-      console.error('Error generating themes:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Use Perplexity to generate book characters
-   * @param book The book to analyze
-   * @returns Promise with generated characters
-   */
-  async generateCharacters(book: Book): Promise<Character[]> {
-    try {
-      const prompt = this.generatePrompt(book, 'characters');
-      const response = await this.queryPerplexity(prompt);
-      const characters = this.safeParseJSON(response);
+      console.error('Error parsing JSON from API response:', error);
+      console.log('Original response:', response);
       
-      return characters;
-    } catch (error) {
-      console.error('Error generating characters:', error);
-      throw error;
+      // Return null to indicate parsing failure
+      return null;
     }
   }
   
   /**
-   * Use Perplexity to generate book locations
-   * @param book The book to analyze
-   * @returns Promise with generated locations
-   */
-  async generateLocations(book: Book): Promise<Location[]> {
-    try {
-      const prompt = this.generatePrompt(book, 'locations');
-      const response = await this.queryPerplexity(prompt);
-      const locations = this.safeParseJSON(response);
-      
-      return locations;
-    } catch (error) {
-      console.error('Error generating locations:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Use Perplexity to generate narrative structure information
-   * @param book The book to analyze
-   * @returns Promise with narrative structure data
-   */
-  async generateNarrativeStructure(book: Book): Promise<Book['narrativeStructure']> {
-    try {
-      const prompt = this.generatePrompt(book, 'narrativeStructure');
-      const response = await this.queryPerplexity(prompt);
-      const structure = this.safeParseJSON(response);
-      
-      return structure;
-    } catch (error) {
-      console.error('Error generating narrative structure:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Use Perplexity to generate genre information
-   * @param book The book to analyze
-   * @returns Promise with genre data
-   */
-  async generateGenreInfo(book: Book): Promise<{ 
-    genres: string[]; 
-    subgenres: string[]; 
-    fiction: boolean; 
-    audience: Book['audience'];
-  }> {
-    try {
-      const prompt = this.generatePrompt(book, 'genres');
-      const response = await this.queryPerplexity(prompt);
-      const genreInfo = this.safeParseJSON(response);
-      
-      return genreInfo;
-    } catch (error) {
-      console.error('Error generating genre information:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Use Perplexity to generate complexity analysis
-   * @param book The book to analyze
-   * @returns Promise with complexity data
-   */
-  async generateComplexityAnalysis(book: Book): Promise<Book['complexity']> {
-    try {
-      const prompt = this.generatePrompt(book, 'complexity');
-      const response = await this.queryPerplexity(prompt);
-      const complexity = this.safeParseJSON(response);
-      
-      return complexity;
-    } catch (error) {
-      console.error('Error generating complexity analysis:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Use Perplexity to generate cultural context information
-   * @param book The book to analyze
-   * @returns Promise with cultural context data
-   */
-  async generateCulturalContext(book: Book): Promise<Book['culturalContext']> {
-    try {
-      const prompt = this.generatePrompt(book, 'culturalContext');
-      const response = await this.queryPerplexity(prompt);
-      const context = this.safeParseJSON(response);
-      
-      return context;
-    } catch (error) {
-      console.error('Error generating cultural context:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Generate all missing metadata for a book
+   * Enrich book metadata using AI
    * @param book The book to enrich
    * @returns Promise with the enriched book
    */
   async enrichBookMetadata(book: Book): Promise<Book> {
+    // Create a copy of the book to enrich
+    const enrichedBook: Book = { ...book };
+    
+    // Identify missing data fields
+    const missingFields = this.identifyMissingData(book);
+    console.log(`Fields needing enrichment for "${book.title}":`, missingFields);
+    
+    // If there's nothing to enrich, return the original book
+    if (missingFields.length === 0) {
+      console.log(`Book "${book.title}" already has complete metadata.`);
+      return book;
+    }
+    
+    // Create a basic BookAIEnrichment object if it doesn't exist
+    if (!enrichedBook.enrichedData) {
+      enrichedBook.enrichedData = {
+        themes: [],
+        enrichmentDate: new Date().toISOString(),
+        enrichmentSource: 'perplexity_ai',
+        version: '1.0'
+      };
+    }
+    
+    // Process each missing field, limiting to 3 at a time to avoid rate limits
+    const fieldsToProcess = missingFields.slice(0, 3);
+    
+    for (const field of fieldsToProcess) {
+      try {
+        console.log(`Enriching field "${field}" for book "${book.title}"...`);
+        
+        // Generate a prompt specific to this field
+        const prompt = this.generatePrompt(book, field);
+        
+        // Query Perplexity API
+        const response = await this.queryPerplexity(prompt);
+        
+        // Parse the response JSON
+        const data = this.parseJsonFromResponse(response);
+        
+        if (!data) {
+          console.error(`Failed to parse response for field "${field}"`);
+          continue;
+        }
+        
+        // Update the book with the enriched data
+        switch (field) {
+          case 'themes':
+            enrichedBook.themes = data as Theme[];
+            if (enrichedBook.enrichedData) {
+              enrichedBook.enrichedData.themes = data.map((theme: Theme) => theme.name);
+            }
+            break;
+            
+          case 'characters':
+            enrichedBook.characters = data as Character[];
+            break;
+            
+          case 'locations':
+            enrichedBook.locations = data as Location[];
+            break;
+            
+          case 'narrativeStructure':
+            enrichedBook.narrativeStructure = data;
+            if (enrichedBook.enrichedData) {
+              enrichedBook.enrichedData.narrativeStyle = data.pov;
+              enrichedBook.enrichedData.mood = data.format || 'Unknown';
+            }
+            break;
+            
+          case 'genres':
+            if (data.genres) enrichedBook.genres = data.genres;
+            if (data.subgenres) enrichedBook.subgenres = data.subgenres;
+            if (data.fiction !== undefined) enrichedBook.fiction = data.fiction;
+            if (data.audience) enrichedBook.audience = data.audience;
+            break;
+            
+          case 'complexity':
+            enrichedBook.complexity = data;
+            if (enrichedBook.enrichedData && data.conceptual) {
+              enrichedBook.enrichedData.complexity = data.conceptual.toString();
+            }
+            break;
+            
+          case 'culturalContext':
+            enrichedBook.culturalContext = data;
+            if (enrichedBook.enrichedData) {
+              enrichedBook.enrichedData.culturalSignificance = data.representation?.join(', ') || 'Unknown';
+            }
+            break;
+        }
+        
+        // Ensure we don't hit rate limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+      } catch (error) {
+        console.error(`Error enriching field "${field}":`, error);
+      }
+    }
+    
+    // Update the enrichment data
+    if (enrichedBook.enrichedData) {
+      enrichedBook.enrichedData.enrichmentDate = new Date().toISOString();
+      enrichedBook.enrichedData.enrichmentSource = 'perplexity_ai';
+      
+      // Add an AI analysis summarizing the book
+      const genreText = enrichedBook.genres?.join(', ') || 'unknown genres';
+      const themeText = enrichedBook.themes?.map(t => t.name).join(', ') || 'various themes';
+      enrichedBook.enrichedData.aiAnalysis = `This book is categorized as ${genreText} and explores themes of ${themeText}.`;
+    }
+    
+    // Update the last modified timestamp
+    enrichedBook.lastModified = new Date().toISOString();
+    
+    return enrichedBook;
+  }
+  
+  /**
+   * Generate a detailed book analysis using Perplexity API
+   * @param book The book to analyze
+   * @returns Promise with a BookAIEnrichment object
+   */
+  async generateBookAnalysis(book: Book): Promise<BookAIEnrichment> {
     try {
-      const enrichedBook = { ...book };
-      const tasks = [];
+      // Generate a comprehensive analysis prompt
+      const prompt = `
+        Please provide a comprehensive analysis of the book:
+        
+        Title: ${book.title}
+        ${book.subtitle ? `Subtitle: ${book.subtitle}` : ''}
+        Author(s): ${book.authors.map(a => a.name).join(', ')}
+        ${book.genres && book.genres.length > 0 ? `Genres: ${book.genres.join(', ')}` : ''}
+        ${book.description ? `Description: ${book.description}` : ''}
+        
+        Do thorough web research to create a detailed analysis of this book, including:
+        1. Major themes and their significance
+        2. Target audience and why it appeals to them
+        3. Cultural significance or impact
+        4. Writing style and narrative approach
+        5. Similar books that readers might enjoy
+        
+        Return the analysis in the following JSON format:
+        
+        {
+          "themes": ["Theme1", "Theme2", "Theme3"],
+          "mood": "e.g., Contemplative, Thrilling, etc.",
+          "narrativeStyle": "e.g., First-person, Third-person limited, etc.",
+          "pacing": "Slow, Medium, or Fast",
+          "targetAudience": "Who this book is best suited for",
+          "complexity": "Simple, Medium, or Complex",
+          "similarBooks": ["Similar Book 1", "Similar Book 2"],
+          "culturalSignificance": "Brief explanation of impact or importance",
+          "aiAnalysis": "A paragraph summarizing key insights about this book"
+        }
+      `;
       
-      // Generate themes if empty
-      if (!book.themes || book.themes.length === 0) {
-        tasks.push(
-          this.generateThemes(book)
-            .then(themes => { enrichedBook.themes = themes; })
-            .catch(error => { console.error('Error generating themes:', error); })
-        );
+      // Query Perplexity API
+      const response = await this.queryPerplexity(prompt);
+      
+      // Parse the response JSON
+      const data = this.parseJsonFromResponse(response);
+      
+      if (!data) {
+        throw new Error('Failed to parse analysis response from Perplexity API');
       }
       
-      // Generate characters if empty
-      if (!book.characters || book.characters.length === 0) {
-        tasks.push(
-          this.generateCharacters(book)
-            .then(characters => { enrichedBook.characters = characters; })
-            .catch(error => { console.error('Error generating characters:', error); })
-        );
-      }
+      // Construct the BookAIEnrichment object
+      const enrichment: BookAIEnrichment = {
+        themes: data.themes || [],
+        mood: data.mood || 'Unknown',
+        narrativeStyle: data.narrativeStyle || 'Unknown',
+        pacing: data.pacing || 'Medium',
+        targetAudience: data.targetAudience || 'General',
+        complexity: data.complexity || 'Medium',
+        similarBooks: data.similarBooks || [],
+        culturalSignificance: data.culturalSignificance || 'Unknown',
+        aiAnalysis: data.aiAnalysis || `This book is a ${data.complexity || 'medium'} complexity work in the ${book.genres?.join(', ') || 'unknown'} genre.`,
+        enrichmentDate: new Date().toISOString(),
+        enrichmentSource: 'perplexity_ai',
+        version: '1.0'
+      };
       
-      // Generate locations if empty
-      if (!book.locations || book.locations.length === 0) {
-        tasks.push(
-          this.generateLocations(book)
-            .then(locations => { enrichedBook.locations = locations; })
-            .catch(error => { console.error('Error generating locations:', error); })
-        );
-      }
-      
-      // Generate narrative structure if empty or default
-      if (!book.narrativeStructure || Object.keys(book.narrativeStructure).length <= 1) {
-        tasks.push(
-          this.generateNarrativeStructure(book)
-            .then(structure => { enrichedBook.narrativeStructure = structure; })
-            .catch(error => { console.error('Error generating narrative structure:', error); })
-        );
-      }
-      
-      // Generate genres if empty
-      if (!book.genres || book.genres.length === 0) {
-        tasks.push(
-          this.generateGenreInfo(book)
-            .then(genreInfo => { 
-              enrichedBook.genres = genreInfo.genres;
-              enrichedBook.subgenres = genreInfo.subgenres;
-              enrichedBook.fiction = genreInfo.fiction;
-              enrichedBook.audience = genreInfo.audience;
-            })
-            .catch(error => { console.error('Error generating genre information:', error); })
-        );
-      }
-      
-      // Generate complexity if empty
-      if (!book.complexity || Object.keys(book.complexity).length === 0) {
-        tasks.push(
-          this.generateComplexityAnalysis(book)
-            .then(complexity => { enrichedBook.complexity = complexity; })
-            .catch(error => { console.error('Error generating complexity analysis:', error); })
-        );
-      }
-      
-      // Generate cultural context if empty
-      if (!book.culturalContext || Object.keys(book.culturalContext).length <= 1) {
-        tasks.push(
-          this.generateCulturalContext(book)
-            .then(context => { enrichedBook.culturalContext = context; })
-            .catch(error => { console.error('Error generating cultural context:', error); })
-        );
-      }
-      
-      // Wait for all metadata generation tasks to complete
-      await Promise.all(tasks);
-      
-      // Update last modified timestamp
-      enrichedBook.lastModified = new Date().toISOString();
-      
-      return enrichedBook;
+      return enrichment;
     } catch (error) {
-      console.error('Error enriching book metadata:', error);
-      throw error;
+      console.error('Error generating book analysis:', error);
+      
+      // Return a minimal enrichment object to avoid null errors
+      return {
+        themes: [],
+        enrichmentDate: new Date().toISOString(),
+        enrichmentSource: 'error',
+        version: '1.0'
+      };
     }
   }
 }

@@ -249,62 +249,132 @@ export class BookEnrichmentOrchestrator {
    * @param book The book to enrich
    */
   async scheduleEnrichment(book: Book): Promise<void> {
-    // Only proceed if the book has an ISBN and isn't already in the queue
-    if (!book.isbn || this.isInEnrichmentQueue(book.isbn)) {
-      return;
-    }
-    
-    // Add to enrichment queue
-    this.addToEnrichmentQueue(book.isbn);
-    
-    // In a real production app, we might use a server-side queue or worker
-    // For now, we'll do the enrichment immediately in the background
-    
     try {
-      // Perform enrichment
+      if (!book.isbn) {
+        console.error('Cannot schedule enrichment for book without ISBN');
+        return;
+      }
+      
+      // Check if this book is already in the enrichment queue
+      if (this.isInEnrichmentQueue(book.isbn)) {
+        console.log(`Book "${book.title}" is already in the enrichment queue`);
+        return;
+      }
+      
+      // Add to the enrichment queue
+      this.addToEnrichmentQueue(book.isbn);
+      
+      console.log(`Scheduled enrichment for book "${book.title}" (ISBN: ${book.isbn})`);
+      
+      // Start the enrichment process asynchronously
+      this.processEnrichment(book);
+    } catch (error) {
+      console.error('Error scheduling enrichment:', error);
+    }
+  }
+  
+  /**
+   * Process book enrichment in the background
+   * @param book The book to enrich
+   */
+  private async processEnrichment(book: Book): Promise<void> {
+    try {
+      // Check if we have an API key for Perplexity
+      if (!aiEnrichmentService.hasAPIKey()) {
+        console.error('Cannot enrich book: Perplexity API key not set');
+        this.removeFromEnrichmentQueue(book.isbn);
+        return;
+      }
+      
+      console.log(`Starting enrichment process for book "${book.title}"...`);
+      
+      // First, identify what data is missing
+      const missingFields = aiEnrichmentService.identifyMissingData(book);
+      console.log(`Fields needing enrichment: ${missingFields.join(', ')}`);
+      
+      if (missingFields.length === 0) {
+        console.log(`Book "${book.title}" already has complete metadata.`);
+        this.removeFromEnrichmentQueue(book.isbn);
+        return;
+      }
+      
+      // Generate enriched metadata
+      console.log(`Generating enriched metadata for "${book.title}"...`);
       const enrichedBook = await aiEnrichmentService.enrichBookMetadata(book);
       
-      // Save to shared enriched database
-      this.saveEnrichedBook(enrichedBook);
+      // If the book has enriched data from Perplexity, save it to the shared database
+      if (enrichedBook.enrichedData && enrichedBook.isbn) {
+        console.log(`Saving enriched data for book "${enrichedBook.title}" to shared database...`);
+        
+        // Update user's copy of the book with enriched data
+        bookMetadataService.saveBook(enrichedBook);
+        
+        // Save to shared enriched database for other users
+        this.saveEnrichedBook(enrichedBook);
+        
+        // Generate a more detailed book analysis if needed
+        if (!enrichedBook.enrichedData.aiAnalysis || enrichedBook.enrichedData.aiAnalysis.length < 100) {
+          console.log(`Generating detailed analysis for "${book.title}"...`);
+          const analysisData = await aiEnrichmentService.generateBookAnalysis(enrichedBook);
+          
+          // Update the book's enriched data with the detailed analysis
+          enrichedBook.enrichedData = {
+            ...enrichedBook.enrichedData,
+            ...analysisData,
+            enrichmentDate: new Date().toISOString()
+          };
+          
+          // Save the updated book again
+          bookMetadataService.saveBook(enrichedBook);
+          this.saveEnrichedBook(enrichedBook);
+        }
+      }
       
-      // Also update the user's copy of the book
-      bookMetadataService.saveBook(enrichedBook);
+      // Remove from the enrichment queue
+      this.removeFromEnrichmentQueue(book.isbn);
+      console.log(`Enrichment complete for book "${book.title}"`);
       
     } catch (error) {
-      console.error('Error enriching book:', error);
-      this.removeFromEnrichmentQueue(book.isbn);
+      console.error(`Error during enrichment process for book "${book.title}":`, error);
+      
+      // Remove from queue even if there was an error
+      if (book.isbn) {
+        this.removeFromEnrichmentQueue(book.isbn);
+      }
     }
   }
   
   /**
    * Process all books in the enrichment queue
-   * This could be called periodically or when the app has network connectivity
    */
   async processEnrichmentQueue(): Promise<void> {
     try {
+      // Get the current queue
       const queue = JSON.parse(localStorage.getItem(this.enrichmentQueueKey) || '[]');
       
       if (queue.length === 0) {
+        console.log('Enrichment queue is empty');
         return;
       }
       
-      // Process up to 5 books at a time to avoid overloading the API
-      const booksToProcess = queue.slice(0, 5);
+      console.log(`Processing enrichment queue. ${queue.length} books in queue.`);
       
-      for (const isbn of booksToProcess) {
-        // Find book in user's library by ISBN
+      // Process each book in the queue
+      for (const isbn of queue) {
+        // Find the book in the user's library using the ISBN
         const userBooks = bookMetadataService.getAllBooks();
         const bookToEnrich = userBooks.find(book => book.isbn === isbn);
         
         if (bookToEnrich) {
-          // Enrich and save
-          const enrichedBook = await aiEnrichmentService.enrichBookMetadata(bookToEnrich);
-          this.saveEnrichedBook(enrichedBook);
-          bookMetadataService.saveBook(enrichedBook);
+          // Process this book
+          await this.processEnrichment(bookToEnrich);
+          
+          // Wait a bit before processing the next book to avoid API rate limits
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          // If book not found, remove it from the queue
+          this.removeFromEnrichmentQueue(isbn);
         }
-        
-        // Remove from queue regardless of success
-        this.removeFromEnrichmentQueue(isbn);
       }
     } catch (error) {
       console.error('Error processing enrichment queue:', error);

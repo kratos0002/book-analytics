@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useBookMetadata } from '../providers/BookMetadataProvider';
 import { Book, ReadingStatus } from '../models/BookTypes';
+import BookMetadataEnrichment from './BookMetadataEnrichment';
 
 const BookLibrary: React.FC = () => {
   const { books, deleteBook, loading, error, refreshBooks } = useBookMetadata();
@@ -9,6 +10,7 @@ const BookLibrary: React.FC = () => {
   const [sortBy, setSortBy] = useState<'title' | 'author' | 'dateAdded' | 'rating'>('dateAdded');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [enrichBookId, setEnrichBookId] = useState<string | null>(null);
 
   // Filter and sort books
   const filteredBooks = useMemo(() => {
@@ -48,17 +50,15 @@ const BookLibrary: React.FC = () => {
             const authorB = b.authors[0]?.name || '';
             comparison = authorA.localeCompare(authorB);
             break;
-          case 'dateAdded':
-            const dateA = new Date(a.dateAdded).getTime();
-            const dateB = new Date(b.dateAdded).getTime();
-            comparison = dateA - dateB;
-            break;
           case 'rating':
-            comparison = a.userRating - b.userRating;
+            comparison = (b.userRating || 0) - (a.userRating || 0);
+            break;
+          case 'dateAdded':
+          default:
+            comparison = new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
             break;
         }
         
-        // Apply sort direction
         return sortDirection === 'asc' ? comparison : -comparison;
       });
   }, [books, searchTerm, filterStatus, sortBy, sortDirection]);
@@ -68,18 +68,20 @@ const BookLibrary: React.FC = () => {
     if (confirmDelete === bookId) {
       deleteBook(bookId);
       setConfirmDelete(null);
-      refreshBooks();
     } else {
       setConfirmDelete(bookId);
+      // Auto-reset confirm state after 3 seconds
+      setTimeout(() => setConfirmDelete(null), 3000);
     }
   };
 
   // Handle sort change
   const handleSortChange = (newSortBy: 'title' | 'author' | 'dateAdded' | 'rating') => {
     if (sortBy === newSortBy) {
-      // Toggle direction if same sort field
+      // Toggle direction if same field
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
+      // Set new field with default desc direction
       setSortBy(newSortBy);
       setSortDirection('desc');
     }
@@ -93,20 +95,31 @@ const BookLibrary: React.FC = () => {
       case 'completed': return 'Completed';
       case 'abandoned': return 'Abandoned';
       case 'reference': return 'Reference';
-      default: return status;
+      default: return 'Unknown';
     }
   };
 
   // Get reading status class
   const getStatusClass = (status: ReadingStatus): string => {
     switch (status) {
-      case 'to-read': return 'bg-gray-700 text-gray-300';
-      case 'reading': return 'bg-blue-900/50 text-blue-300';
-      case 'completed': return 'bg-green-900/50 text-green-300';
-      case 'abandoned': return 'bg-red-900/50 text-red-300';
-      case 'reference': return 'bg-purple-900/50 text-purple-300';
-      default: return 'bg-gray-700 text-gray-300';
+      case 'to-read': return 'bg-gray-700 text-gray-200';
+      case 'reading': return 'bg-blue-700 text-blue-100';
+      case 'completed': return 'bg-green-700 text-green-100';
+      case 'abandoned': return 'bg-red-700 text-red-100';
+      case 'reference': return 'bg-purple-700 text-purple-100';
+      default: return 'bg-gray-700 text-gray-200';
     }
+  };
+
+  // Handle book enrichment
+  const handleEnrichBook = (bookId: string) => {
+    setEnrichBookId(bookId);
+  };
+  
+  // Close enrichment panel
+  const handleCloseEnrichment = () => {
+    setEnrichBookId(null);
+    refreshBooks(); // Refresh to get updated metadata
   };
 
   if (loading) {
@@ -145,6 +158,17 @@ const BookLibrary: React.FC = () => {
         <p>Error loading your library: {error}</p>
       </div>
     );
+  }
+
+  // If enrichment panel is open, show it
+  if (enrichBookId) {
+    const bookToEnrich = books.find(book => book.id === enrichBookId);
+    if (!bookToEnrich) {
+      setEnrichBookId(null);
+      return <div className="text-center py-10">Book not found</div>;
+    }
+    
+    return <BookMetadataEnrichment book={bookToEnrich} onClose={handleCloseEnrichment} />;
   }
 
   return (
@@ -341,16 +365,31 @@ const BookLibrary: React.FC = () => {
                       ? `${book.pageCount} pages` 
                       : 'Unknown length'}
                   </div>
-                  <button
-                    onClick={() => handleRemoveBook(book.id)}
-                    className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      confirmDelete === book.id
-                        ? 'bg-red-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-red-900/40 hover:text-red-300'
-                    }`}
-                  >
-                    {confirmDelete === book.id ? 'Confirm Remove' : 'Remove'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEnrichBook(book.id)}
+                      className="text-xs font-medium px-2 py-1 rounded-full bg-indigo-900/40 text-indigo-300 hover:bg-indigo-700/60"
+                      title="Enrich with AI"
+                    >
+                      <span className="flex items-center">
+                        <svg className="w-3 h-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        AI
+                      </span>
+                    </button>
+                    
+                    <button
+                      onClick={() => handleRemoveBook(book.id)}
+                      className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        confirmDelete === book.id
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-red-900/40 hover:text-red-300'
+                      }`}
+                    >
+                      {confirmDelete === book.id ? 'Confirm Remove' : 'Remove'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
