@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useBookMetadata } from '../providers/BookMetadataProvider';
 import { Book, ReadingStatus } from '../models/BookTypes';
+import BookDetails from './BookDetails';
 
 const BookLibrary: React.FC = () => {
   const { books, deleteBook, loading, error, refreshBooks } = useBookMetadata();
@@ -9,6 +10,7 @@ const BookLibrary: React.FC = () => {
   const [sortBy, setSortBy] = useState<'title' | 'author' | 'dateAdded' | 'rating'>('dateAdded');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   // Filter and sort books
   const filteredBooks = useMemo(() => {
@@ -70,6 +72,14 @@ const BookLibrary: React.FC = () => {
       // Auto-reset confirm state after 3 seconds
       setTimeout(() => setConfirmDelete(null), 3000);
     }
+  };
+
+  const handleViewBookDetails = (book: Book) => {
+    setSelectedBook(book);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedBook(null);
   };
 
   const handleSortChange = (newSortBy: 'title' | 'author' | 'dateAdded' | 'rating') => {
@@ -210,7 +220,8 @@ const BookLibrary: React.FC = () => {
           {filteredBooks.map(book => (
             <div 
               key={book.id} 
-              className="book-card bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-transform transform hover:scale-[1.02]"
+              className="book-card bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-transform transform hover:scale-[1.02] cursor-pointer"
+              onClick={() => handleViewBookDetails(book)}
             >
               <div className="relative h-48 overflow-hidden bg-gray-700">
                 {book.coverImage ? (
@@ -278,7 +289,10 @@ const BookLibrary: React.FC = () => {
                   </div>
                   
                   <button
-                    onClick={() => handleRemoveBook(book.id)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering parent click
+                      handleRemoveBook(book.id);
+                    }}
                     className={`text-xs font-medium px-2 py-1 rounded-full ${
                       confirmDelete === book.id 
                         ? 'bg-red-600 text-white' 
@@ -299,6 +313,11 @@ const BookLibrary: React.FC = () => {
         {filterStatus !== 'all' ? ` with status "${getStatusDisplayText(filterStatus as ReadingStatus)}"` : ''}
         {searchTerm ? ` matching "${searchTerm}"` : ''} (Total: {books.length})
       </div>
+      
+      {/* Book Details Modal */}
+      {selectedBook && (
+        <BookDetails book={selectedBook} onClose={handleCloseDetails} />
+      )}
     </div>
   );
 };
